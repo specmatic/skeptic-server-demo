@@ -1,0 +1,91 @@
+# Specmatic Lint Server demo
+
+This demo uses local API-spec and configuration fixtures. Each numbered scenario makes exactly one HTTP request to the lint server. Run them individually to inspect each response and the corresponding server logs.
+
+## Setup
+
+Requirements: Java 17+, Python 3, Git, OpenSSL, netcat, and a Specmatic Enterprise service-account licence.
+
+Build the Enterprise executable from the Enterprise repository root:
+
+```sh
+./gradlew :executable:shadowObfuscatedJar
+```
+
+If the licence is not available at `~/.specmatic/specmatic-license.txt`, set `SPECMATIC_LICENSE_PATH` to its file before starting the server.
+
+## Start the server
+
+From this demo directory, run the server in one terminal and leave it open. Startup and request logs appear here.
+
+```sh
+./demo.sh start
+```
+
+In a second terminal, change to this demo directory and run the scenarios below, one at a time. Press Ctrl-C in the first terminal to stop the server.
+
+## Scenarios
+
+### 1. Health
+
+**Request:** `GET /health` (no authentication)
+
+**Run:** `./scenarios/01-health.sh`
+
+**Expected:** HTTP 200 with `{"status":"up"}`. This confirms the HTTP server is responding.
+
+### 2. Readiness
+
+**Request:** `GET /readiness` (no authentication)
+
+**Run:** `./scenarios/02-readiness.sh`
+
+**Expected:** HTTP 200 with `{"status":"ready"}`. This reports whether the server can currently accept lint work.
+
+### 3. Missing JWT
+
+**Request:** `POST /skeptic/lint/reports` with the batch body from `requests/lint-batch.json` and no Authorization header.
+
+**Run:** `./scenarios/03-no-token-401.sh`
+
+**Expected:** HTTP 401. The server rejects the request before loading configuration or fetching specs.
+
+### 4. JWT scope mismatch
+
+**Request:** The same batch POST, with a demo-generated RS256 JWT. Its signature, issuer, and audience are valid. The token's `scope` is `lint:run`; the configured exact value is `lint:run reports:read`.
+
+**Run:** `./scenarios/04-wrong-scope-403.sh`
+
+**Expected:** HTTP 403 because the token does not satisfy the exact claim match.
+
+### 5. Status before linting
+
+**Request:** `GET /status` (no authentication). Run this before the batch request.
+
+**Run:** `./scenarios/05-status-before-lint.sh`
+
+**Expected:** HTTP 200. On a fresh server run, Insights is healthy with no published reports, and the config list is empty.
+
+### 6. Batch lint
+
+**Request:** `POST /skeptic/lint/reports` with two specs, the local config Git URL, and a demo-generated RS256 JWT containing the required scope. The request body is `requests/lint-batch.json`.
+
+**Run:** `./scenarios/06-batch-lint.sh`
+
+**Expected:** HTTP 200 with one report per spec. The lint `result` is `failure` because the small sample specs intentionally produce findings. The full response is saved to `.demo-state/lint-response.json`. The server queues each report for background Insights publishing and returns without waiting for that work.
+
+### 7. Status after linting
+
+**Request:** `GET /status` (no authentication). The script waits five seconds after the batch before making this request.
+
+**Run:** `./scenarios/07-status-after-lint.sh`
+
+**Expected:** HTTP 200. The config snapshot shows the loaded branch and commit. After both pushes succeed, `publishedReportCount` should be 2 and the queue should be empty. The counter reflects successful Insights responses; any report still queued has not succeeded yet.
+
+Server logs remain visible in the first terminal. They include request IDs and HTTP outcomes for the scenarios.
+
+## Repeat the demo
+
+Restart `./demo.sh start` to reset the server’s in-memory status and config cache, then run the scenarios in order. Generated keys, tokens, logs, responses, and cache files remain under the ignored `.demo-state/` directory.
+
+Each run of the batch scenario submits two sample reports to the Insights destination configured in the service-account licence.

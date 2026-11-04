@@ -1,0 +1,13 @@
+openapi: 3.0.3
+info:
+  title: Payments API
+  version: 1.0.0
+servers:
+  - url: https://api.example.test
+paths:
+  /payments:
+    post:
+      operationId: createPayment
+      responses:
+        '201':
+          description: Payment created
