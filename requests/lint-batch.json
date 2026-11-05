@@ -1,7 +1,7 @@
 {
   "config": {
     "git": {
-      "url": "https://x-access-token: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@github.com/specmatic/private-central-linter-config.git",
+      "url": "https://github.com/specmatic/private-central-linter-config.git",
       "branch": "main"
     }
   },

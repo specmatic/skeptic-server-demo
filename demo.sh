@@ -13,7 +13,6 @@ if [[ "${1:-}" != "start" || $# -ne 1 ]]; then
   echo "Usage: ./demo.sh start" >&2
   exit 2
 fi
-
 if [[ ! -f "$ENTERPRISE_JAR" ]]; then
   echo "Enterprise jar not found: $ENTERPRISE_JAR" >&2
   echo "Build it with: (cd \"$ENTERPRISE_ROOT\" && ./gradlew :executable:shadowObfuscatedJar)" >&2
@@ -21,6 +20,10 @@ if [[ ! -f "$ENTERPRISE_JAR" ]]; then
 fi
 if [[ -n "${SPECMATIC_LICENSE_PATH:-}" && ! -f "$SPECMATIC_LICENSE_PATH" ]]; then
   echo "SPECMATIC_LICENSE_PATH does not point to a file." >&2
+  exit 1
+fi
+if [[ -z "${CENTRAL_CONFIG_REPO_TOKEN:-}" ]]; then
+  echo "Set CENTRAL_CONFIG_REPO_TOKEN to a GitHub token with read access to the central config repo." >&2
   exit 1
 fi
 if [[ -n "${SPECMATIC_LICENSE_PATH:-}" ]]; then
