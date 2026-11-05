@@ -22,10 +22,6 @@ if [[ -n "${SPECMATIC_LICENSE_PATH:-}" && ! -f "$SPECMATIC_LICENSE_PATH" ]]; the
   echo "SPECMATIC_LICENSE_PATH does not point to a file." >&2
   exit 1
 fi
-if [[ -z "${CENTRAL_CONFIG_REPO_TOKEN:-}" ]]; then
-  echo "Set CENTRAL_CONFIG_REPO_TOKEN to a GitHub token with read access to the central config repo." >&2
-  exit 1
-fi
 if [[ -n "${SPECMATIC_LICENSE_PATH:-}" ]]; then
   LICENSE_DIR="$(cd "$(dirname "$SPECMATIC_LICENSE_PATH")" && pwd)"
   export SPECMATIC_LICENSE_PATH="$LICENSE_DIR/$(basename "$SPECMATIC_LICENSE_PATH")"

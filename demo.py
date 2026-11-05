@@ -3,10 +3,12 @@
 
 import base64
 import json
+import os
 import subprocess
 import sys
 import time
 from pathlib import Path
+from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent
 STATE = ROOT / ".demo-state"
@@ -61,6 +63,22 @@ def summarize_response(path: Path, label: str) -> None:
     print(f"  full response saved: {path.relative_to(ROOT)}")
 
 
+def prepare_lint_request() -> None:
+    token = os.getenv("CENTRAL_CONFIG_REPO_TOKEN", "").strip()
+    if not token:
+        raise SystemExit("Set CENTRAL_CONFIG_REPO_TOKEN before running the batch lint scenario.")
+
+    request = json.loads((ROOT / "requests/lint-batch.json").read_text())
+    request["config"]["git"]["url"] = (
+        "https://x-access-token:" + quote(token, safe="")
+        + "@github.com/specmatic/private-central-linter-config.git"
+    )
+    destination = STATE / "lint-batch-authenticated.json"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(request, indent=2) + "\n")
+    destination.chmod(0o600)
+
+
 def main() -> None:
     action = sys.argv[1]
     if action == "token":
@@ -68,6 +86,9 @@ def main() -> None:
         return
     if action == "summary":
         summarize_response(Path(sys.argv[2]), sys.argv[3])
+        return
+    if action == "prepare-request":
+        prepare_lint_request()
         return
     raise SystemExit(f"Unknown action: {action}")
 

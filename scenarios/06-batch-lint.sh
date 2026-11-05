@@ -4,6 +4,8 @@ source "$(dirname "$0")/common.sh"
 require_server
 
 python3 "$ROOT/demo.py" token good
+python3 "$ROOT/demo.py" prepare-request
+REQUEST_FILE="$STATE/lint-batch-authenticated.json"
 run_request -sS -w '\nHTTP %{http_code}\n' \
   -o "$STATE/lint-response.json" \
   -H "Authorization: Bearer $(cat "$STATE/good.jwt")" \
