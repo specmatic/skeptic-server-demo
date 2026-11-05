@@ -57,5 +57,5 @@ java -jar "$ENTERPRISE_JAR" lint-server \
   --jwt-jwks-url="$FIXTURE_URL/jwks.json" \
   --jwt-audience=cba-lint-demo \
   --jwt-match='scope="lint:run reports:read"' \
-  --allowed-config-repo-url="$FIXTURE_URL/config.git" \
+  --allowed-config-repo-url="https://github.com/specmatic/private-central-linter-config.git" \
   --allowed-spec-download-host=127.0.0.1 2>&1 | tee "$STATE/server.log"
