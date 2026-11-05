@@ -159,6 +159,17 @@ In a second terminal, change to this demo directory and run the scenarios below,
 
 **Expected:** HTTP 503 with error code `CONFIG_UNAVAILABLE` and message `Configuration source is temporarily unavailable.` The JWT passes authentication, but the server cannot fetch the private configuration with the invalid GitHub token. No lint reports are produced. The generated request is saved to `.demo-state/lint-batch-invalid-config-token.json`.
 
+
+To demonstrate a failed credential replacement with a warm cache, start a fresh server and run these three scenarios in sequence within five minutes. Use the same GitHub CLI login for both valid requests.
+
+```shell
+./scenarios/06-batch-lint.sh
+./scenarios/08-invalid-config-token.sh
+./scenarios/06-batch-lint.sh
+```
+
+**Expected:** HTTP 200, then HTTP 503 with `CONFIG_UNAVAILABLE`, then HTTP 200. The middle request fails despite the cached snapshot. The final request succeeds with the original credentials. The two successful requests each queue two reports.
+
 ### 9. Download hostname outside the allowlist
 
 **Request:** The batch POST with a valid demo JWT and the body from `requests/lint-unapproved-download-host.json`. The first spec uses the allowed hostname `127.0.0.1`; the second uses `localhost`. The server starts with `--allowed-spec-download-host=127.0.0.1`, so `localhost` does not match, even though it resolves to the same machine.
@@ -189,10 +200,58 @@ In a second terminal, change to this demo directory and run the scenarios below,
 
 **Expected:** HTTP 200 with batch and per-spec `result` set to `success`, and zero SARIF findings under the configured `default` profile. The summary prints `0 finding(s)` for each spec. Inspect `.demo-state/lint-clean-response.json` for the full clean reports, including each SARIF run's empty `results` array. The credentialed request is saved to `.demo-state/lint-clean-batch-authenticated.json`; keep it private. As with scenario 6, this scenario uses your GitHub CLI token and queues two reports for background Insights publishing.
 
+### 12. Unknown profile
+
+**Request:** An authenticated batch with a valid first spec and a nonexistent profile on the second spec.
+
+```shell
+./scenarios/12-unknown-profile-400.sh
+```
+
+**Expected:** HTTP 400 with `UNKNOWN_PROFILE`. Check the new entries in `.demo-state/fixtures.log` for this run. A JWKS request may appear, but neither spec should be downloaded. No reports are queued.
+
+### 13. Second specification fails to download
+
+**Request:** An authenticated batch with a valid first spec and a missing second spec on the same allowed fixture host.
+
+```shell
+./scenarios/13-missing-spec-502.sh
+```
+
+**Expected:** The fixture log shows a successful download of the first spec and a 404 for the second. The lint API returns HTTP 502 with `SPEC_FETCH_FAILED` and no partial reports. Check `/status` and confirm that no Insights work is recorded for the rejected request ID. If the queue was empty before the request, it should stay empty and the published count should stay the same.
+
+### 14. Mixed batch lint
+
+**Request:** An authenticated batch with the clean orders fixture first and the original payments fixture second. The script generates a fresh request ID by default. This example supplies one explicitly so it can be matched across the request, response header, and server log.
+
+```shell
+DEMO_REQUEST_ID="$(python3 -c 'import uuid; print(uuid.uuid4())')" ./scenarios/14-mixed-batch-lint.sh
+```
+
+**Expected:** HTTP 200 with `orders-api-clean` reporting `success` first, `payments-api` reporting `failure` second, and the batch reporting `failure`. Both reports are queued. The full response and headers are saved in `.demo-state/lint-mixed-response.json` and `.demo-state/lint-mixed-response.headers`.
+
+### 15. Malformed request ID
+
+**Request:** `GET /health` with `X-Request-Id: not-a-uuid` and no authentication.
+
+```shell
+./scenarios/15-invalid-request-id-400.sh
+```
+
+**Expected:** HTTP 400 with `INVALID_REQUEST`. The server generates a fresh UUID that matches in the `X-Request-Id` response header and the JSON `requestId` field.
+
 Server logs remain visible in the first terminal. They include request IDs and HTTP outcomes for the scenarios.
+
+## Insights failure and recovery
+
+Run this walkthrough separately on a fresh demo server. It requires a service-account licence pointing to a controllable Insights test endpoint. The lint server publishes to the Insights URL in its licence, and `./demo.sh start` starts only the JWT and spec fixtures.
+
+1. Configure the Insights endpoint to accept the `orders-api` report and return HTTP 503 for the `payments-api` report, including its retries. Start the demo with the test licence and run `./scenarios/06-batch-lint.sh` once. Expect HTTP 200 with both reports returned to the caller.
+2. Poll `curl -i http://127.0.0.1:8000/status` until `insights.state` is `blocked`. Confirm that `publishedReportCount` is 1 and the batch's request ID has only the `payments-api` report remaining, with state `blocked` and a nonzero attempt count. Run `./scenarios/01-health.sh` and `./scenarios/02-readiness.sh`. Expect HTTP 200 for health and HTTP 503 with `{"status":"not_ready"}` for readiness.
+3. Change the test endpoint to accept `payments-api`. Without submitting another lint request, poll status and readiness until recovery. Expect the publish count to reach 2, the batch to disappear from `unpublishedReports`, and readiness to return HTTP 200. The endpoint should see no repeat delivery attempt for the already delivered `orders-api` report.
 
 ## Repeat the demo
 
 Restart `./demo.sh start` to reset the server’s in-memory status and config cache, then run the scenarios in order. Generated keys, JWTs, the credentialed request, logs, responses, and cache files remain under the ignored `.demo-state/` directory. Keep the README and `.demo-state/` out of shared archives.
 
-Each run of either batch scenario (6 or 11) submits two sample reports to the Insights destination configured in the service-account licence.
+Each run of a successful batch scenario (6, 11, or 14) submits two sample reports to the Insights destination configured in the service-account licence.

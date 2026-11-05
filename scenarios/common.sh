@@ -50,3 +50,17 @@ run_request() {
   printf '\n=== Response ===\n'
   curl "${args[@]}"
 }
+
+submit_lint_fixture() {
+  local request_name="$1" request_id="$2"
+  shift 2
+  require_server
+  python3 "$ROOT/demo.py" token good
+  python3 "$ROOT/demo.py" prepare-request "$request_name"
+  run_request -sS \
+    -H "Authorization: Bearer $(cat "$STATE/good.jwt")" \
+    -H 'Content-Type: application/json' \
+    -H "X-Request-Id: $request_id" \
+    --data-binary "@$STATE/$request_name-authenticated.json" \
+    "$@" "$SERVER_URL/skeptic/lint/reports"
+}

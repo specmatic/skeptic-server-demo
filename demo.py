@@ -62,7 +62,7 @@ def summarize_response(path: Path, label: str) -> None:
     print(f"  full response saved: {path.relative_to(ROOT)}")
 
 
-def prepare_lint_request(invalid_config_token: bool = False, clean_specs: bool = False) -> None:
+def prepare_lint_request(invalid_config_token: bool = False, request_name: str = "lint-batch") -> None:
     if invalid_config_token:
         token = "deliberately-invalid-config-token"
     else:
@@ -76,7 +76,6 @@ def prepare_lint_request(invalid_config_token: bool = False, clean_specs: bool =
     if not token:
         raise SystemExit("GitHub CLI returned an empty token. Run gh auth login --hostname github.com.")
 
-    request_name = "lint-clean-batch" if clean_specs else "lint-batch"
     request = json.loads((ROOT / "requests" / f"{request_name}.json").read_text())
     request["config"]["git"]["url"] = (
         "https://x-access-token:" + quote(token, safe="")
@@ -98,13 +97,13 @@ def main() -> None:
         summarize_response(Path(sys.argv[2]), sys.argv[3])
         return
     if action == "prepare-request":
-        prepare_lint_request()
+        prepare_lint_request(request_name=sys.argv[2] if len(sys.argv) > 2 else "lint-batch")
         return
     if action == "prepare-invalid-config-token-request":
         prepare_lint_request(invalid_config_token=True)
         return
     if action == "prepare-clean-request":
-        prepare_lint_request(clean_specs=True)
+        prepare_lint_request(request_name="lint-clean-batch")
         return
     raise SystemExit(f"Unknown action: {action}")
 
