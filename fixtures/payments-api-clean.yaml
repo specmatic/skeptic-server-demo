@@ -1,0 +1,336 @@
+---
+openapi: 3.0.3
+info:
+  title: Payments API
+  description: Demo API for managing payments.
+  version: 1.0.0
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+- url: https://api.example.test
+security:
+- oauth2:
+  - api:access
+tags:
+- name: payments
+  description: Payments operations.
+- name: health
+  description: Service health and version information.
+paths:
+  "/payments":
+    post:
+      operationId: createPayment
+      summary: Create payment
+      description: Create a payment for an order.
+      tags:
+      - payments
+      parameters:
+      - name: x-request-id
+        in: header
+        description: Unique request identifier for tracing.
+        required: true
+        schema:
+          type: string
+          format: uuid
+          maxLength: 36
+          pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/newPayment"
+            examples:
+              createPayment:
+                value:
+                  orderId: order-001
+                  amount: 100
+                  currency: INR
+      responses:
+        '201':
+          "$ref": "#/components/responses/PaymentCreated"
+        '400':
+          "$ref": "#/components/responses/BadRequest"
+        '429':
+          "$ref": "#/components/responses/TooManyRequests"
+        '500':
+          "$ref": "#/components/responses/InternalServerError"
+        '401':
+          "$ref": "#/components/responses/Unauthorized"
+  "/health":
+    get:
+      operationId: getHealth
+      summary: Get service health
+      description: Return the current service health.
+      tags:
+      - health
+      parameters:
+      - name: x-request-id
+        in: header
+        description: Unique request identifier for tracing.
+        required: true
+        schema:
+          type: string
+          format: uuid
+          maxLength: 36
+          pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      responses:
+        '200':
+          description: Get service health succeeded
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests permitted in the rate limit window.
+              schema:
+                type: integer
+                minimum: 1
+                format: int32
+                maximum: 2147483647
+        '400':
+          "$ref": "#/components/responses/BadRequest"
+        '429':
+          "$ref": "#/components/responses/TooManyRequests"
+        '500':
+          "$ref": "#/components/responses/InternalServerError"
+        '401':
+          "$ref": "#/components/responses/Unauthorized"
+  "/health/info":
+    get:
+      operationId: getHealthInfo
+      summary: Get service information
+      description: Return the service name and version.
+      tags:
+      - health
+      parameters:
+      - name: x-request-id
+        in: header
+        description: Unique request identifier for tracing.
+        required: true
+        schema:
+          type: string
+          format: uuid
+          maxLength: 36
+          pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      responses:
+        '200':
+          description: Get service information succeeded
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests permitted in the rate limit window.
+              schema:
+                type: integer
+                minimum: 1
+                format: int32
+                maximum: 2147483647
+        '400':
+          "$ref": "#/components/responses/BadRequest"
+        '429':
+          "$ref": "#/components/responses/TooManyRequests"
+        '500':
+          "$ref": "#/components/responses/InternalServerError"
+        '401':
+          "$ref": "#/components/responses/Unauthorized"
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.test/oauth/token
+          scopes:
+            api:access: Access the demo API
+      description: OAuth2 access tokens must be validated according to RFC8725.
+  responses:
+    PaymentCreated:
+      description: Create payment succeeded
+      headers:
+        X-RateLimit-Limit:
+          description: Maximum requests permitted in the rate limit window.
+          schema:
+            type: integer
+            minimum: 1
+            format: int32
+            maximum: 2147483647
+        Content-Type:
+          description: Media type of the response body.
+          schema:
+            type: string
+            enum:
+            - application/json
+        Content-Language:
+          description: Language of response messages.
+          schema:
+            type: string
+            enum:
+            - en
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/payment"
+          examples:
+            createPayment:
+              value:
+                paymentId: payment-001
+                orderId: order-001
+                amount: 100
+                currency: INR
+    BadRequest:
+      description: Request validation failed.
+      headers:
+        X-RateLimit-Limit:
+          description: Maximum requests permitted in the rate limit window.
+          schema:
+            type: integer
+            minimum: 1
+            format: int32
+            maximum: 2147483647
+        Content-Type:
+          description: Media type of the response body.
+          schema:
+            type: string
+            enum:
+            - application/json
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/error"
+    TooManyRequests:
+      description: Rate limit exceeded.
+      headers:
+        X-RateLimit-Limit:
+          description: Maximum requests permitted in the rate limit window.
+          schema:
+            type: integer
+            minimum: 1
+            format: int32
+            maximum: 2147483647
+        Content-Type:
+          description: Media type of the response body.
+          schema:
+            type: string
+            enum:
+            - application/json
+        Retry-After:
+          description: Seconds to wait before retrying.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 3600
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/error"
+    InternalServerError:
+      description: An unexpected server error occurred.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/error"
+      headers:
+        Content-Type:
+          description: Media type of the response body.
+          schema:
+            type: string
+            enum:
+            - application/json
+    Unauthorized:
+      description: A valid access token is required.
+      headers:
+        X-RateLimit-Limit:
+          description: Maximum requests permitted in the rate limit window.
+          schema:
+            type: integer
+            minimum: 1
+            format: int32
+            maximum: 2147483647
+        Content-Type:
+          description: Media type of the response body.
+          schema:
+            type: string
+            enum:
+            - application/json
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/error"
+  schemas:
+    error:
+      type: object
+      required:
+      - timestamp
+      - status
+      - error
+      - path
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          maxLength: 256
+          pattern: "^.+$"
+        status:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 2147483647
+        error:
+          type: string
+          maxLength: 256
+          pattern: "^.+$"
+          format: string
+        path:
+          type: string
+          maxLength: 256
+          pattern: "^.+$"
+          format: string
+    newPayment:
+      type: object
+      required:
+      - orderId
+      - amount
+      - currency
+      properties:
+        orderId:
+          type: string
+          maxLength: 256
+          pattern: "^.+$"
+          format: string
+        amount:
+          type: number
+          minimum: 0.01
+          format: double
+          maximum: 1000000000
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          maxLength: 256
+          format: string
+    payment:
+      type: object
+      x-id-field: paymentId
+      required:
+      - paymentId
+      - orderId
+      - amount
+      - currency
+      properties:
+        paymentId:
+          type: string
+          maxLength: 256
+          pattern: "^.+$"
+          format: string
+        orderId:
+          type: string
+          maxLength: 256
+          pattern: "^.+$"
+          format: string
+        amount:
+          type: number
+          minimum: 0.01
+          format: double
+          maximum: 1000000000
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          maxLength: 256
+          format: string

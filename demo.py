@@ -62,7 +62,7 @@ def summarize_response(path: Path, label: str) -> None:
     print(f"  full response saved: {path.relative_to(ROOT)}")
 
 
-def prepare_lint_request(invalid_config_token: bool = False) -> None:
+def prepare_lint_request(invalid_config_token: bool = False, clean_specs: bool = False) -> None:
     if invalid_config_token:
         token = "deliberately-invalid-config-token"
     else:
@@ -76,12 +76,14 @@ def prepare_lint_request(invalid_config_token: bool = False) -> None:
     if not token:
         raise SystemExit("GitHub CLI returned an empty token. Run gh auth login --hostname github.com.")
 
-    request = json.loads((ROOT / "requests/lint-batch.json").read_text())
+    request_name = "lint-clean-batch" if clean_specs else "lint-batch"
+    request = json.loads((ROOT / "requests" / f"{request_name}.json").read_text())
     request["config"]["git"]["url"] = (
         "https://x-access-token:" + quote(token, safe="")
         + "@github.com/specmatic/private-central-linter-config.git"
     )
-    destination = STATE / ("lint-batch-invalid-config-token.json" if invalid_config_token else "lint-batch-authenticated.json")
+    suffix = "invalid-config-token" if invalid_config_token else "authenticated"
+    destination = STATE / f"{request_name}-{suffix}.json"
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(request, indent=2) + "\n")
     destination.chmod(0o600)
@@ -100,6 +102,9 @@ def main() -> None:
         return
     if action == "prepare-invalid-config-token-request":
         prepare_lint_request(invalid_config_token=True)
+        return
+    if action == "prepare-clean-request":
+        prepare_lint_request(clean_specs=True)
         return
     raise SystemExit(f"Unknown action: {action}")
 

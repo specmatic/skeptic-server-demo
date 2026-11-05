@@ -70,7 +70,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path == "/jwks.json":
             self.send_file(STATE / "jwks.json", "application/json")
-        elif self.path in ("/specs/orders-api.yaml", "/specs/payments-api.yaml"):
+        elif self.path in (
+            "/specs/orders-api.yaml", "/specs/payments-api.yaml",
+            "/specs/orders-api-clean.yaml", "/specs/payments-api-clean.yaml",
+        ):
             name = self.path.rsplit("/", 1)[-1]
             self.send_file(ROOT / "fixtures" / name, "application/yaml")
         else:

@@ -179,10 +179,20 @@ In a second terminal, change to this demo directory and run the scenarios below,
 
 **Expected:** HTTP 403 with error code `CONFIG_URL_NOT_ALLOWED` and message `Configuration repository URL is not allowed.` The server rejects the entire batch before fetching configuration or downloading specs. No lint reports are produced or queued for Insights. This scenario does not need a GitHub token because the config URL is checked before fetching the repository. The allowlist checks the repository URL, so using the same `github.com` hostname does not grant access to another repository.
 
+### 11. Clean batch lint
+
+**Request:** The authenticated batch POST using `requests/lint-clean-batch.json`, which downloads the separate `fixtures/orders-api-clean.yaml` and `fixtures/payments-api-clean.yaml` specs. The original fixtures used by scenario 6 retain their intentional lint findings. Restart `./demo.sh start` after updating the demo so the fixture server serves the new files.
+
+```shell
+./scenarios/11-clean-batch-lint.sh
+```
+
+**Expected:** HTTP 200 with batch and per-spec `result` set to `success`, and zero SARIF findings under the configured `default` profile. The summary prints `0 finding(s)` for each spec. Inspect `.demo-state/lint-clean-response.json` for the full clean reports, including each SARIF run's empty `results` array. The credentialed request is saved to `.demo-state/lint-clean-batch-authenticated.json`; keep it private. As with scenario 6, this scenario uses your GitHub CLI token and queues two reports for background Insights publishing.
+
 Server logs remain visible in the first terminal. They include request IDs and HTTP outcomes for the scenarios.
 
 ## Repeat the demo
 
 Restart `./demo.sh start` to reset the server’s in-memory status and config cache, then run the scenarios in order. Generated keys, JWTs, the credentialed request, logs, responses, and cache files remain under the ignored `.demo-state/` directory. Keep the README and `.demo-state/` out of shared archives.
 
-Each run of the batch scenario submits two sample reports to the Insights destination configured in the service-account licence.
+Each run of either batch scenario (6 or 11) submits two sample reports to the Insights destination configured in the service-account licence.
