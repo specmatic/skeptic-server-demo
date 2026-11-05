@@ -6,7 +6,7 @@ STATE="$ROOT/.demo-state"
 SESSION="$STATE/session-$(date +%Y%m%d-%H%M%S)-$$"
 FIXTURE_URL="http://127.0.0.1:8765"
 SERVER_PORT=8000
-ENTERPRISE_ROOT="/Users/naresh/projects/specmatic-all/enterprise"
+ENTERPRISE_ROOT="$ROOT/../enterprise"
 ENTERPRISE_JAR="$ENTERPRISE_ROOT/executable/build/libs/executable-1.28.4-all-obfuscated.jar"
 
 if [[ "${1:-}" != "start" || $# -ne 1 ]]; then
