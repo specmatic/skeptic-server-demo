@@ -4,7 +4,7 @@ source "$(dirname "$0")/common.sh"
 require_server
 
 python3 "$ROOT/demo.py" token bad
-curl -sS -i \
+run_request -sS -i \
   -H "Authorization: Bearer $(cat "$STATE/bad.jwt")" \
   -H 'Content-Type: application/json' \
   -H "X-Request-Id: $(new_request_id)" \

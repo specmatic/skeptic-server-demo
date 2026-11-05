@@ -4,10 +4,7 @@ source "$(dirname "$0")/common.sh"
 require_server
 
 python3 "$ROOT/demo.py" token good
-echo "POST /skeptic/lint/reports request:"
-cat "$REQUEST_FILE"
-echo
-curl -sS -w '\nHTTP %{http_code}\n' \
+run_request -sS -w '\nHTTP %{http_code}\n' \
   -o "$STATE/lint-response.json" \
   -H "Authorization: Bearer $(cat "$STATE/good.jwt")" \
   -H 'Content-Type: application/json' \

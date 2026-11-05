@@ -3,7 +3,7 @@ set -euo pipefail
 source "$(dirname "$0")/common.sh"
 require_server
 
-curl -sS -i \
+run_request -sS -i \
   -H 'Content-Type: application/json' \
   -H "X-Request-Id: $(new_request_id)" \
   --data-binary "@$REQUEST_FILE" \
