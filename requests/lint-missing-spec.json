@@ -6,9 +6,9 @@
     }
   },
   "repository": {
-    "id": "cba-demo-orders",
-    "name": "CBA Demo APIs",
-    "url": "https://github.com/example/cba-demo-apis",
+    "id": "skeptic-demo-orders",
+    "name": "Skeptic Demo APIs",
+    "url": "https://github.com/example/skeptic-demo-apis",
     "branch": "main",
     "specifications": [
       {
@@ -26,10 +26,10 @@
     ]
   },
   "ci": {
-    "buildId": "cba-demo-missing-spec-001",
+    "buildId": "skeptic-demo-missing-spec-001",
     "runAttempt": "1",
     "metadata": {
-      "pipelineName": "cba-lint-demo"
+      "pipelineName": "skeptic-lint-demo"
     }
   }
 }

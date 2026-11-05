@@ -55,7 +55,7 @@ SERVER_COMMAND=(
   --port="$SERVER_PORT"
   --jwt-issuer="$FIXTURE_URL/demo-issuer"
   --jwt-jwks-url="$FIXTURE_URL/jwks.json"
-  --jwt-audience=cba-lint-demo
+  --jwt-audience=skeptic-lint-demo
   --jwt-match='scope="lint:run reports:read"'
   --allowed-config-repo-url="https://github.com/specmatic/private-central-linter-config.git"
   --allowed-spec-download-host=127.0.0.1

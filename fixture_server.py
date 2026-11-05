@@ -39,7 +39,7 @@ def ensure_key_pair() -> None:
     der = public_key.read_bytes()
     modulus, exponent = rsa_public_numbers(der)
     (STATE / "jwks.json").write_text(
-        json.dumps({"keys": [{"kty": "RSA", "use": "sig", "alg": "RS256", "kid": "cba-demo-key", "n": b64url(modulus), "e": b64url(exponent)}]})
+        json.dumps({"keys": [{"kty": "RSA", "use": "sig", "alg": "RS256", "kid": "skeptic-demo-key", "n": b64url(modulus), "e": b64url(exponent)}]})
     )
 
 
@@ -65,7 +65,7 @@ def rsa_public_numbers(der: bytes) -> tuple[bytes, bytes]:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "CbaDemoFixtures/1.0"
+    server_version = "SkepticDemoFixtures/1.0"
 
     def do_GET(self) -> None:
         if self.path == "/jwks.json":

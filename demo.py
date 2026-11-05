@@ -20,11 +20,11 @@ def b64url(value: bytes) -> str:
 
 def create_token(scope: str, destination: Path) -> None:
     now = int(time.time())
-    header = {"alg": "RS256", "typ": "JWT", "kid": "cba-demo-key"}
+    header = {"alg": "RS256", "typ": "JWT", "kid": "skeptic-demo-key"}
     claims = {
         "iss": ISSUER,
-        "aud": "cba-lint-demo",
-        "sub": "cba-demo-caller",
+        "aud": "skeptic-lint-demo",
+        "sub": "skeptic-demo-caller",
         "iat": now,
         "nbf": now - 5,
         "exp": now + 1800,
