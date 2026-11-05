@@ -3,7 +3,6 @@
 
 import base64
 import json
-import os
 import subprocess
 import sys
 import time
@@ -64,9 +63,15 @@ def summarize_response(path: Path, label: str) -> None:
 
 
 def prepare_lint_request() -> None:
-    token = os.getenv("CENTRAL_CONFIG_REPO_TOKEN", "").strip()
+    try:
+        token = subprocess.run(
+            ["gh", "auth", "token", "--hostname", "github.com"],
+            check=True, capture_output=True, text=True,
+        ).stdout.strip()
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        raise SystemExit("Sign in with gh auth login --hostname github.com before running the batch lint scenario.") from None
     if not token:
-        raise SystemExit("Set CENTRAL_CONFIG_REPO_TOKEN before running the batch lint scenario.")
+        raise SystemExit("GitHub CLI returned an empty token. Run gh auth login --hostname github.com.")
 
     request = json.loads((ROOT / "requests/lint-batch.json").read_text())
     request["config"]["git"]["url"] = (

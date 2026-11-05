@@ -14,13 +14,13 @@ Build the Enterprise executable from the Enterprise repository root:
 
 If the licence is not available at `~/.specmatic/specmatic-license.txt`, set `SPECMATIC_LICENSE_PATH` to its file before starting the server.
 
-Set `CENTRAL_CONFIG_REPO_TOKEN` in the terminal where you will run the batch scenario. The scenario embeds it in the config repository URL in the lint request; the server does not need the token as a startup setting.
+Sign in to GitHub CLI using an account with read access to `specmatic/private-central-linter-config`:
 
 ```sh
-export CENTRAL_CONFIG_REPO_TOKEN="your-github-token"
+gh auth login --hostname github.com
 ```
 
-If you put a live token here, do not commit or share this README.
+The batch scenario retrieves your token just before building the request using `gh auth token --hostname github.com`. No token environment variable is needed. The generated request contains the token in its config repository URL and is printed by the scenario; do not share that output or the generated request file.
 
 ## Demonstrate a missing licence
 
@@ -131,7 +131,7 @@ In a second terminal, change to this demo directory and run the scenarios below,
 
 ### 6. Batch lint
 
-**Request:** `POST /skeptic/lint/reports` with two specs, a self-contained credentialed config Git URL, and a demo-generated RS256 JWT containing the required scope. The scenario builds the request from `requests/lint-batch.json` and `CENTRAL_CONFIG_REPO_TOKEN`, then saves it under `.demo-state/`.
+**Request:** `POST /skeptic/lint/reports` with two specs, a self-contained credentialed config Git URL, and a demo-generated RS256 JWT containing the required scope. The scenario retrieves the GitHub token just in time with `gh auth token --hostname github.com`, builds the request from `requests/lint-batch.json`, then saves it under `.demo-state/`.
 
 ```shell
 ./scenarios/06-batch-lint.sh
