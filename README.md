@@ -1,6 +1,6 @@
 # Specmatic Lint Server demo
 
-This demo uses local API-spec and configuration fixtures. Each numbered scenario makes exactly one HTTP request to the lint server. Run them individually to inspect each request, response, and the corresponding server logs. Each scenario prints the request method, URL, headers, and body (when present) before the response. Authorization headers include the actual demo bearer token so its claims can be inspected.
+This demo uses local API-spec and JWKS fixtures plus the private central configuration repository. Each numbered scenario makes exactly one HTTP request to the lint server. Run them individually to inspect each request, response, and the corresponding server logs. Each scenario prints the request method, URL, headers, and body (when present) before the response. Authorization headers include the actual demo bearer token so its claims can be inspected.
 
 ## Setup
 
@@ -13,6 +13,12 @@ Build the Enterprise executable from the Enterprise repository root:
 ```
 
 If the licence is not available at `~/.specmatic/specmatic-license.txt`, set `SPECMATIC_LICENSE_PATH` to its file before starting the server.
+
+Set `CENTRAL_CONFIG_REPO_TOKEN` to a GitHub token with read access to `specmatic/private-central-linter-config` before starting the server. The lint server uses it to clone the private config repo; the request file contains only the credential-free URL.
+
+```sh
+export CENTRAL_CONFIG_REPO_TOKEN="your-github-token"
+```
 
 ## Start the server
 
@@ -78,7 +84,7 @@ In a second terminal, change to this demo directory and run the scenarios below,
 
 ### 6. Batch lint
 
-**Request:** `POST /skeptic/lint/reports` with two specs, the local config Git URL, and a demo-generated RS256 JWT containing the required scope. The request body is `requests/lint-batch.json`.
+**Request:** `POST /skeptic/lint/reports` with two specs, the private central config Git URL, and a demo-generated RS256 JWT containing the required scope. The request is in `requests/lint-batch.json`.
 
 ```shell
 ./scenarios/06-batch-lint.sh
@@ -100,6 +106,6 @@ Server logs remain visible in the first terminal. They include request IDs and H
 
 ## Repeat the demo
 
-Restart `./demo.sh start` to reset the server’s in-memory status and config cache, then run the scenarios in order. Generated keys, tokens, logs, responses, and cache files remain under the ignored `.demo-state/` directory.
+Restart `./demo.sh start` to reset the server’s in-memory status and config cache, then run the scenarios in order. Generated keys, JWTs, logs, responses, and cache files remain under the ignored `.demo-state/` directory.
 
 Each run of the batch scenario submits two sample reports to the Insights destination configured in the service-account licence.

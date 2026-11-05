@@ -1,7 +1,7 @@
 {
   "config": {
     "git": {
-      "url": "http://127.0.0.1:8765/config.git",
+      "url": "https://github.com/specmatic/private-central-linter-config.git",
       "branch": "main"
     }
   },
@@ -14,13 +14,13 @@
       {
         "id": "orders-api",
         "path": "contracts/orders-api.yaml",
-        "profile": "cba-demo",
+        "profile": "default",
         "downloadUrl": "http://127.0.0.1:8765/specs/orders-api.yaml"
       },
       {
         "id": "payments-api",
         "path": "contracts/payments-api.yaml",
-        "profile": "cba-demo",
+        "profile": "default",
         "downloadUrl": "http://127.0.0.1:8765/specs/payments-api.yaml"
       }
     ]

@@ -1,5 +1,0 @@
-profiles:
-  cba-demo:
-    rules:
-      extends:
-        - recommended

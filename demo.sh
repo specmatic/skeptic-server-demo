@@ -13,6 +13,10 @@ if [[ "${1:-}" != "start" || $# -ne 1 ]]; then
   echo "Usage: ./demo.sh start" >&2
   exit 2
 fi
+if [[ -z "${CENTRAL_CONFIG_REPO_TOKEN:-}" ]]; then
+  echo "Set CENTRAL_CONFIG_REPO_TOKEN to a GitHub token with read access to the central config repo." >&2
+  exit 1
+fi
 
 if [[ ! -f "$ENTERPRISE_JAR" ]]; then
   echo "Enterprise jar not found: $ENTERPRISE_JAR" >&2
@@ -57,5 +61,5 @@ java -jar "$ENTERPRISE_JAR" lint-server \
   --jwt-jwks-url="$FIXTURE_URL/jwks.json" \
   --jwt-audience=cba-lint-demo \
   --jwt-match='scope="lint:run reports:read"' \
-  --allowed-config-repo-url="$FIXTURE_URL/config.git" \
+  --allowed-config-repo-url="https://github.com/specmatic/private-central-linter-config.git" \
   --allowed-spec-download-host=127.0.0.1 2>&1 | tee "$STATE/server.log"
