@@ -51,11 +51,19 @@ fi
 echo "Starting the lint server on http://localhost:$SERVER_PORT"
 echo "Run one scenario at a time from a second terminal. Press Ctrl-C here when done."
 cd "$SESSION"
-java -jar "$ENTERPRISE_JAR" lint-server \
-  --port="$SERVER_PORT" \
-  --jwt-issuer="$FIXTURE_URL/demo-issuer" \
-  --jwt-jwks-url="$FIXTURE_URL/jwks.json" \
-  --jwt-audience=cba-lint-demo \
-  --jwt-match='scope="lint:run reports:read"' \
-  --allowed-config-repo-url="https://github.com/specmatic/private-central-linter-config.git" \
-  --allowed-spec-download-host=127.0.0.1 2>&1 | tee "$STATE/server.log"
+SERVER_COMMAND=(
+  java -jar "$ENTERPRISE_JAR" lint-server
+  --port="$SERVER_PORT"
+  --jwt-issuer="$FIXTURE_URL/demo-issuer"
+  --jwt-jwks-url="$FIXTURE_URL/jwks.json"
+  --jwt-audience=cba-lint-demo
+  --jwt-match='scope="lint:run reports:read"'
+  --allowed-config-repo-url="https://github.com/specmatic/private-central-linter-config.git"
+  --allowed-spec-download-host=127.0.0.1
+)
+{
+  printf 'Running command:'
+  printf ' %q' "${SERVER_COMMAND[@]}"
+  printf '\n'
+  "${SERVER_COMMAND[@]}"
+} 2>&1 | tee "$STATE/server.log"
