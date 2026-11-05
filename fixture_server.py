@@ -75,7 +75,7 @@ class Handler(BaseHTTPRequestHandler):
             "/specs/orders-api-clean.yaml", "/specs/payments-api-clean.yaml",
         ):
             name = self.path.rsplit("/", 1)[-1]
-            self.send_file(ROOT / "fixtures" / name, "application/yaml")
+            self.send_file(ROOT / "specs" / name, "application/yaml")
         else:
             self.send_error(404)
 

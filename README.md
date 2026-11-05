@@ -181,7 +181,7 @@ In a second terminal, change to this demo directory and run the scenarios below,
 
 ### 11. Clean batch lint
 
-**Request:** The authenticated batch POST using `requests/lint-clean-batch.json`, which downloads the separate `fixtures/orders-api-clean.yaml` and `fixtures/payments-api-clean.yaml` specs. The original fixtures used by scenario 6 retain their intentional lint findings. Restart `./demo.sh start` after updating the demo so the fixture server serves the new files.
+**Request:** The authenticated batch POST using `requests/lint-clean-batch.json`, which downloads the separate `specs/orders-api-clean.yaml` and `specs/payments-api-clean.yaml` specs. The original specs used by scenario 6 retain their intentional lint findings. Restart `./demo.sh start` after updating the demo so the fixture server serves the new files.
 
 ```shell
 ./scenarios/11-clean-batch-lint.sh
