@@ -159,6 +159,16 @@ In a second terminal, change to this demo directory and run the scenarios below,
 
 **Expected:** HTTP 503 with error code `CONFIG_UNAVAILABLE` and message `Configuration source is temporarily unavailable.` The JWT passes authentication, but the server cannot fetch the private configuration with the invalid GitHub token. No lint reports are produced. The generated request is saved to `.demo-state/lint-batch-invalid-config-token.json`.
 
+### 9. Download hostname outside the allowlist
+
+**Request:** The batch POST with a valid demo JWT and the body from `requests/lint-unapproved-download-host.json`. The first spec uses the allowed hostname `127.0.0.1`; the second uses `localhost`. The server starts with `--allowed-spec-download-host=127.0.0.1`, so `localhost` does not match, even though it resolves to the same machine.
+
+```shell
+./scenarios/09-unapproved-download-host-403.sh
+```
+
+**Expected:** HTTP 403 with error code `SPEC_URL_NOT_ALLOWED`, message `The downloadUrl host is not allowed.`, and field `repository.specifications[1].downloadUrl`. The server rejects the entire batch before loading configuration or downloading either spec. No lint reports are produced or queued for Insights. This scenario does not need a GitHub token because download URLs are checked before fetching configuration.
+
 Server logs remain visible in the first terminal. They include request IDs and HTTP outcomes for the scenarios.
 
 ## Repeat the demo

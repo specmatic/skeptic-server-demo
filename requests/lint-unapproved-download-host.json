@@ -1,0 +1,35 @@
+{
+  "config": {
+    "git": {
+      "url": "https://github.com/specmatic/private-central-linter-config.git",
+      "branch": "main"
+    }
+  },
+  "repository": {
+    "id": "cba-demo-orders",
+    "name": "CBA Demo APIs",
+    "url": "https://github.com/example/cba-demo-apis",
+    "branch": "main",
+    "specifications": [
+      {
+        "id": "orders-api",
+        "path": "contracts/orders-api.yaml",
+        "profile": "default",
+        "downloadUrl": "http://127.0.0.1:8765/specs/orders-api.yaml"
+      },
+      {
+        "id": "payments-api",
+        "path": "contracts/payments-api.yaml",
+        "profile": "default",
+        "downloadUrl": "http://localhost:8765/specs/payments-api.yaml"
+      }
+    ]
+  },
+  "ci": {
+    "buildId": "cba-demo-001",
+    "runAttempt": "1",
+    "metadata": {
+      "pipelineName": "cba-lint-demo"
+    }
+  }
+}
