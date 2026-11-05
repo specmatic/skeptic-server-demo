@@ -14,6 +14,39 @@ Build the Enterprise executable from the Enterprise repository root:
 
 If the licence is not available at `~/.specmatic/specmatic-license.txt`, set `SPECMATIC_LICENSE_PATH` to its file before starting the server.
 
+## Demonstrate a missing licence
+
+Before starting the server, point to a licence file that does not exist:
+
+```shell
+SPECMATIC_LICENSE_PATH=/does-not-exist/specmatic-license.txt ./demo.sh start
+```
+
+**Expected:** The startup script exits with code 1 before starting the server and prints:
+
+```text
+SPECMATIC_LICENSE_PATH does not point to a file.
+```
+
+This override applies only to this command. For normal startup below, use a valid licence at the default location or set `SPECMATIC_LICENSE_PATH` to its file.
+
+## Demonstrate invalid licence content
+
+You can also supply the licence directly through `SPECMATIC_LICENSE_CONTENT`. To demonstrate the server rejecting invalid content, run:
+
+```shell
+SPECMATIC_LICENSE_CONTENT='this-is-not-a-valid-license' ./demo.sh start
+```
+
+**Expected:** The server rejects the licence during startup and exits with code 1. The logs include the following error, followed by a stack trace:
+
+```text
+Checking for Specmatic Enterprise service-account license...
+io.specmatic.license.core.LicenseLoadException: Unable to parse license key. Please ensure it is a valid Specmatic license key.
+```
+
+This override applies only to this command. For normal startup below, supply a valid service-account licence.
+
 ## Start the server
 
 From this demo directory, run the server in one terminal and leave it open. Startup and request logs appear here.
@@ -21,6 +54,18 @@ From this demo directory, run the server in one terminal and leave it open. Star
 ```shell
 ./demo.sh start
 ```
+
+### Start with valid licence content
+
+To demonstrate successful startup using `SPECMATIC_LICENSE_CONTENT`, load the valid service-account licence from your local file:
+
+```shell
+SPECMATIC_LICENSE_CONTENT="$(cat ~/.specmatic/specmatic-license.txt)" ./demo.sh start
+```
+
+**Expected:** The server accepts the licence and stays running on `http://localhost:8000`. The licence content is read from the file without printing it to the terminal. This override applies only to this command.
+
+Use either startup command above, then continue with the scenarios.
 
 In a second terminal, change to this demo directory and run the scenarios below, one at a time. Press Ctrl-C in the first terminal to stop the server.
 
