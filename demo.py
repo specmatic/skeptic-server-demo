@@ -62,14 +62,17 @@ def summarize_response(path: Path, label: str) -> None:
     print(f"  full response saved: {path.relative_to(ROOT)}")
 
 
-def prepare_lint_request() -> None:
-    try:
-        token = subprocess.run(
-            ["gh", "auth", "token", "--hostname", "github.com"],
-            check=True, capture_output=True, text=True,
-        ).stdout.strip()
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        raise SystemExit("Sign in with gh auth login --hostname github.com before running the batch lint scenario.") from None
+def prepare_lint_request(invalid_config_token: bool = False) -> None:
+    if invalid_config_token:
+        token = "deliberately-invalid-config-token"
+    else:
+        try:
+            token = subprocess.run(
+                ["gh", "auth", "token", "--hostname", "github.com"],
+                check=True, capture_output=True, text=True,
+            ).stdout.strip()
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            raise SystemExit("Sign in with gh auth login --hostname github.com before running the batch lint scenario.") from None
     if not token:
         raise SystemExit("GitHub CLI returned an empty token. Run gh auth login --hostname github.com.")
 
@@ -78,7 +81,7 @@ def prepare_lint_request() -> None:
         "https://x-access-token:" + quote(token, safe="")
         + "@github.com/specmatic/private-central-linter-config.git"
     )
-    destination = STATE / "lint-batch-authenticated.json"
+    destination = STATE / ("lint-batch-invalid-config-token.json" if invalid_config_token else "lint-batch-authenticated.json")
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(request, indent=2) + "\n")
     destination.chmod(0o600)
@@ -94,6 +97,9 @@ def main() -> None:
         return
     if action == "prepare-request":
         prepare_lint_request()
+        return
+    if action == "prepare-invalid-config-token-request":
+        prepare_lint_request(invalid_config_token=True)
         return
     raise SystemExit(f"Unknown action: {action}")
 
