@@ -59,19 +59,37 @@ This override applies only to this command. For normal startup below, supply a v
 
 From this demo directory, run the server in one terminal and leave it open. Startup and request logs appear here.
 
+Start with HTTP:
+
 ```shell
 ./demo.sh start
 ```
+
+Or start with HTTPS:
+
+```shell
+./demo.sh start --https
+```
+
+HTTPS mode creates a local certificate and PKCS#12 keystore under `.demo-state/`, then starts the lint server at `https://localhost:8443`. The scenario scripts trust this certificate automatically, so they verify TLS without disabling certificate checks. The JWKS and specification fixtures remain local HTTP services; HTTPS covers the client connection to the lint server.
 
 ### Start with valid licence content
 
 To demonstrate successful startup using `SPECMATIC_LICENSE_CONTENT`, load the valid service-account licence from your local file:
 
+Start with HTTP:
+
 ```shell
 SPECMATIC_LICENSE_CONTENT="$(cat ~/.specmatic/specmatic-license.txt)" ./demo.sh start
 ```
 
-**Expected:** The server accepts the licence and stays running on `http://localhost:8000`. The licence content is read from the file without printing it to the terminal. This override applies only to this command.
+Or start with HTTPS:
+
+```shell
+SPECMATIC_LICENSE_CONTENT="$(cat ~/.specmatic/specmatic-license.txt)" ./demo.sh start --https
+```
+
+**Expected:** The server accepts the licence and stays running. The licence content is read from the file without printing it to the terminal. This override applies only to the selected command.
 
 Use either startup command above, then continue with the scenarios.
 
@@ -87,7 +105,7 @@ In a second terminal, change to this demo directory and run the scenarios below,
 ./scenarios/01-health.sh
 ```
 
-**Expected:** HTTP 200 with `{"status":"up"}`. This confirms the HTTP server is responding.
+**Expected:** HTTP 200 with `{"status":"up"}`. This confirms the server is responding over the selected protocol.
 
 ### 2. Readiness
 
@@ -247,7 +265,14 @@ Server logs remain visible in the first terminal. They include request IDs and H
 Run this walkthrough separately on a fresh demo server. It requires a service-account licence pointing to a controllable Insights test endpoint. The lint server publishes to the Insights URL in its licence, and `./demo.sh start` starts only the JWT and spec fixtures.
 
 1. Configure the Insights endpoint to accept the `orders-api` report and return HTTP 503 for the `payments-api` report, including its retries. Start the demo with the test licence and run `./scenarios/06-batch-lint.sh` once. Expect HTTP 200 with both reports returned to the caller.
-2. Poll `curl -i http://127.0.0.1:8000/status` until `insights.state` is `blocked`. Confirm that `publishedReportCount` is 1 and the batch's request ID has only the `payments-api` report remaining, with state `blocked` and a nonzero attempt count. Run `./scenarios/01-health.sh` and `./scenarios/02-readiness.sh`. Expect HTTP 200 for health and HTTP 503 with `{"status":"not_ready"}` for readiness.
+2. From the demo directory, poll the status endpoint until `insights.state` is `blocked`:
+
+   ```shell
+   source ./scenarios/common.sh
+   while true; do run_request -sS "$SERVER_URL/status"; sleep 2; done
+   ```
+
+   Confirm that `publishedReportCount` is 1 and the batch's request ID has only the `payments-api` report remaining, with state `blocked` and a nonzero attempt count. Run `./scenarios/01-health.sh` and `./scenarios/02-readiness.sh`. Expect HTTP 200 for health and HTTP 503 with `{"status":"not_ready"}` for readiness.
 3. Change the test endpoint to accept `payments-api`. Without submitting another lint request, poll status and readiness until recovery. Expect the publish count to reach 2, the batch to disappear from `unpublishedReports`, and readiness to return HTTP 200. The endpoint should see no repeat delivery attempt for the already delivered `orders-api` report.
 
 ## Repeat the demo

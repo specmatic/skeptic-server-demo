@@ -3,12 +3,14 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE="$ROOT/.demo-state"
-SERVER_URL="http://127.0.0.1:8000"
+SERVER_URL="$(cat "$STATE/server-url" 2>/dev/null || printf 'http://127.0.0.1:8000')"
+SERVER_PORT="$(cat "$STATE/server-port" 2>/dev/null || printf '8000')"
+SERVER_CA_FILE="$(cat "$STATE/server-ca" 2>/dev/null || true)"
 REQUEST_FILE="$ROOT/requests/lint-batch.json"
 
 require_server() {
-  if ! nc -z -w 1 127.0.0.1 8000 >/dev/null 2>&1; then
-    echo "Start the lint server first: ./demo.sh start" >&2
+  if ! nc -z -w 1 127.0.0.1 "$SERVER_PORT" >/dev/null 2>&1; then
+    echo "Start the lint server first: ./demo.sh start [--https]" >&2
     exit 1
   fi
 }
@@ -48,7 +50,11 @@ run_request() {
     printf '\n'
   fi
   printf '\n=== Response ===\n'
-  curl "${args[@]}"
+  local -a curl_args=("${args[@]}")
+  if [[ -n "$SERVER_CA_FILE" ]]; then
+    curl_args+=(--cacert "$SERVER_CA_FILE")
+  fi
+  curl "${curl_args[@]}"
 }
 
 submit_lint_fixture() {
