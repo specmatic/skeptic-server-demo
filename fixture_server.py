@@ -96,8 +96,8 @@ def main() -> None:
     ensure_key_pair()
     if len(sys.argv) > 1 and sys.argv[1] == "prepare":
         return
-    print(f"Local demo fixtures listening on http://127.0.0.1:{PORT}", flush=True)
-    ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+    print(f"Local demo fixtures listening on http://0.0.0.0:{PORT}", flush=True)
+    ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
 
 
 if __name__ == "__main__":

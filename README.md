@@ -4,15 +4,19 @@ This demo uses local API-spec and JWKS fixtures plus the private central configu
 
 ## Setup
 
-Requirements: Java 17+, Python 3, Git, OpenSSL, netcat, and a Specmatic Enterprise service-account licence.
+Requirements: Docker, Python 3, Git, GitHub CLI, curl, OpenSSL, netcat, and a Specmatic Enterprise service-account licence.
 
-Build the Enterprise executable from the Enterprise repository root:
+The server runs using `specmatic/enterprise:latest`. Start Docker before running the demo. The demo uses bridge networking and publishes the lint server on `127.0.0.1:8000` (HTTP) or `127.0.0.1:8443` (HTTPS); Docker Desktop host networking is not required. The container reaches the JWKS and spec fixtures through `host.docker.internal:8765`. An explicit host-gateway mapping also supports Docker Engine on Linux. The fixture server binds to `0.0.0.0:8765` so containers can reach it; it serves only demo public keys and specification files.
+
+Pull the image before starting:
 
 ```shell
-./gradlew :executable:shadowObfuscatedJar
+docker pull specmatic/enterprise:latest
 ```
 
-If the licence is not available at `~/.specmatic/specmatic-license.txt`, set `SPECMATIC_LICENSE_PATH` to its file before starting the server.
+To use a specific image tag, set `SPECMATIC_ENTERPRISE_IMAGE=specmatic/enterprise:<tag>` when running `./demo.sh start`.
+
+The startup script mounts `~/.specmatic/specmatic-license.txt` read-only into the container. If the licence is elsewhere, set `SPECMATIC_LICENSE_PATH` to its file before starting the server. `SPECMATIC_LICENSE_CONTENT` is passed through when supplied and takes precedence over the file. Each session directory is mounted into the container for cache and TLS files. Pressing Ctrl-C stops the container and fixture server.
 
 Sign in to GitHub CLI using an account with read access to `specmatic/private-central-linter-config`:
 
@@ -32,7 +36,7 @@ SPECMATIC_LICENSE_PATH=/does-not-exist/specmatic-license.txt ./demo.sh start
 
 **Expected:** The startup script exits with code 1 before starting the server and prints:
 
-```text
+```terminaloutput
 SPECMATIC_LICENSE_PATH does not point to a file.
 ```
 
@@ -46,18 +50,13 @@ You can also supply the licence directly through `SPECMATIC_LICENSE_CONTENT`. To
 SPECMATIC_LICENSE_CONTENT='this-is-not-a-valid-license' ./demo.sh start
 ```
 
-**Expected:** The server rejects the licence during startup and exits with code 1. The logs include the following error, followed by a stack trace:
+**Expected:** The server rejects the licence during startup and exits with code 1. The logs include the following error:
 
-```text
-Checking for Specmatic Enterprise service-account license...
-io.specmatic.license.core.LicenseLoadException: Unable to parse license key. Please ensure it is a valid Specmatic license key.
+```terminaloutput
+"level":"INFO","service":"lint-server","component":"server","event":"server.start_failed","outcome":"failure","exceptionType":"io.specmatic.license.core.LicenseLoadException","errorMessage":"Unable to parse license key. Please ensure it is a valid Specmatic license key."}
 ```
 
-This override applies only to this command. For normal startup below, supply a valid service-account licence.
-
 ## Start the server
-
-From this demo directory, run the server in one terminal and leave it open. Startup and request logs appear here.
 
 Start with HTTP:
 
@@ -190,7 +189,7 @@ To demonstrate a failed credential replacement with a warm cache, start a fresh 
 
 ### 9. Download hostname outside the allowlist
 
-**Request:** The batch POST with a valid demo JWT and the body from `requests/lint-unapproved-download-host.json`. The first spec uses the allowed hostname `127.0.0.1`; the second uses `localhost`. The server starts with `--allowed-spec-download-host=127.0.0.1`, so `localhost` does not match, even though it resolves to the same machine.
+**Request:** The batch POST with a valid demo JWT and the body from `requests/lint-unapproved-download-host.json`. The first spec uses the allowed hostname `host.docker.internal`; the second uses `localhost`. The server starts with `--allowed-spec-download-host=host.docker.internal`, so `localhost` does not match. Inside the container, `localhost` refers to the container itself.
 
 ```shell
 ./scenarios/09-unapproved-download-host-403.sh
@@ -200,7 +199,7 @@ To demonstrate a failed credential replacement with a warm cache, start a fresh 
 
 ### 10. Configuration repository outside the allowlist
 
-**Request:** The batch POST with a valid demo JWT and the body from `requests/lint-unapproved-config-repo.json`. The config URL is `https://github.com/example/unapproved-linter-config.git`; the server only allows `https://github.com/specmatic/private-central-linter-config.git`. Both spec download URLs use the allowed hostname `127.0.0.1`.
+**Request:** The batch POST with a valid demo JWT and the body from `requests/lint-unapproved-config-repo.json`. The config URL is `https://github.com/example/unapproved-linter-config.git`; the server only allows `https://github.com/specmatic/private-central-linter-config.git`. Both spec download URLs use the allowed hostname `host.docker.internal`.
 
 ```shell
 ./scenarios/10-unapproved-config-repo-403.sh

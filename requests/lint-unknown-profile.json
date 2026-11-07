@@ -15,13 +15,13 @@
         "id": "orders-api",
         "path": "contracts/orders-api.yaml",
         "profile": "default",
-        "downloadUrl": "http://127.0.0.1:8765/specs/orders-api.yaml"
+        "downloadUrl": "http://host.docker.internal:8765/specs/orders-api.yaml"
       },
       {
         "id": "payments-api",
         "path": "contracts/payments-api.yaml",
         "profile": "demo-profile-that-does-not-exist",
-        "downloadUrl": "http://127.0.0.1:8765/specs/payments-api.yaml"
+        "downloadUrl": "http://host.docker.internal:8765/specs/payments-api.yaml"
       }
     ]
   },

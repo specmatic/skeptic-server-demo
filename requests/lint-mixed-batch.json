@@ -15,13 +15,13 @@
         "id": "orders-api-clean",
         "path": "contracts/orders-api-clean.yaml",
         "profile": "default",
-        "downloadUrl": "http://127.0.0.1:8765/specs/orders-api-clean.yaml"
+        "downloadUrl": "http://host.docker.internal:8765/specs/orders-api-clean.yaml"
       },
       {
         "id": "payments-api",
         "path": "contracts/payments-api.yaml",
         "profile": "default",
-        "downloadUrl": "http://127.0.0.1:8765/specs/payments-api.yaml"
+        "downloadUrl": "http://host.docker.internal:8765/specs/payments-api.yaml"
       }
     ]
   },
