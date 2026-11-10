@@ -9,7 +9,7 @@ CONTAINER_FIXTURE_URL="http://host.docker.internal:8765"
 SERVER_PORT=8000
 SERVER_URL="http://127.0.0.1:$SERVER_PORT"
 TLS_DIR="$SESSION/tls"
-ENTERPRISE_IMAGE="${SPECMATIC_ENTERPRISE_IMAGE:-specmatic/enterprise:latest}"
+ENTERPRISE_IMAGE="${SPECMATIC_ENTERPRISE_IMAGE:-specmatic/enterprise-snapshots:latest}"
 CONTAINER_NAME="skeptic-lint-demo-$$"
 
 if [[ "${1:-}" != "start" || $# -gt 2 || ( $# -eq 2 && "$2" != "--https" ) ]]; then

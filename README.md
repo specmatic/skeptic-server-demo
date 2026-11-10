@@ -13,11 +13,11 @@ The server runs using `specmatic/enterprise:latest`. Start Docker before running
 Pull the image before starting:
 
 ```shell
-docker pull specmatic/enterprise:latest
+docker pull specmatic/enterprise-snapshots:latest
 ```
 
 ```terminaloutput
-latest: Pulling from specmatic/enterprise
+latest: Pulling from specmatic/enterprise-snapshots
 ```
 
 To use a specific image tag, set `SPECMATIC_ENTERPRISE_IMAGE=specmatic/enterprise:<tag>` when running `./demo.sh start`.
@@ -209,7 +209,7 @@ content-type: application/json
 
 ### 4. JWT scope mismatch
 
-**Request:** The same batch POST, with a demo-generated RS256 JWT. Its signature, issuer, and audience are valid. The token's `scope` is `lint:run`; the configured exact value is `lint:run reports:read`.
+**Request:** The same batch POST, with a demo-generated RS256 JWT. Its signature, issuer, and audience are valid. The token's `scope` is `lint:read`; the server requires `lint:run` or `reports:read`.
 
 ```shell
 ./scenarios/04-wrong-scope-403.sh
@@ -360,11 +360,11 @@ X-Request-Id: <request-id: UUID>
 <request-body: JSON object from the scenario fixture>
 
 === Response ===
-{"code":"CONFIG_UNAVAILABLE","message":"Configuration source is temporarily unavailable.","requestId":"<request-id: UUID>"}
-HTTP 503
+{"code":"INVALID_CONFIG_TOKEN","message":"The configuration repository access token was rejected or has expired.","requestId":"<request-id: UUID>"}
+HTTP 422
 ```
 
-**Expected:** HTTP 503 with error code `CONFIG_UNAVAILABLE` and message `Configuration source is temporarily unavailable.` The JWT passes authentication, but the server cannot fetch the private configuration with the invalid GitHub token. No lint reports are produced. The generated request is saved to `.demo-state/lint-batch-invalid-config-token.json`.
+**Expected:** HTTP 422 with error code `INVALID_CONFIG_TOKEN` and message `The configuration repository access token was rejected or has expired.` The JWT passes authentication, but the server cannot fetch the private configuration with the invalid GitHub token. Replace or refresh the GitHub token before retrying. No lint reports are produced. The generated request is saved to `.demo-state/lint-batch-invalid-config-token.json`.
 
 
 To demonstrate a failed credential replacement with a warm cache, start a fresh server and run these three scenarios in sequence within five minutes. Use the same GitHub CLI login for both valid requests.
@@ -401,8 +401,8 @@ X-Request-Id: <request-id: UUID>
 <request-body: JSON object from the scenario fixture>
 
 === Response ===
-{"code":"CONFIG_UNAVAILABLE","message":"Configuration source is temporarily unavailable.","requestId":"<request-id: UUID>"}
-HTTP 503
+{"code":"INVALID_CONFIG_TOKEN","message":"The configuration repository access token was rejected or has expired.","requestId":"<request-id: UUID>"}
+HTTP 422
 
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
@@ -421,7 +421,7 @@ Batch lint response:
   full response saved: .demo-state/lint-response.json
 ```
 
-**Expected:** HTTP 200, then HTTP 503 with `CONFIG_UNAVAILABLE`, then HTTP 200. The middle request fails despite the cached snapshot. The final request succeeds with the original credentials. The two successful requests each queue two reports.
+**Expected:** HTTP 200, then HTTP 422 with `INVALID_CONFIG_TOKEN`, then HTTP 200. The middle request fails despite the cached snapshot. The final request succeeds with the original credentials. The two successful requests each queue two reports.
 
 ### 9. Download hostname outside the allowlist
 

@@ -91,7 +91,7 @@ def prepare_lint_request(invalid_config_token: bool = False, request_name: str =
 def main() -> None:
     action = sys.argv[1]
     if action == "token":
-        create_token("lint:run reports:read" if sys.argv[2] == "good" else "lint:run", STATE / f"{sys.argv[2]}.jwt")
+        create_token("lint:run reports:read" if sys.argv[2] == "good" else "lint:read", STATE / f"{sys.argv[2]}.jwt")
         return
     if action == "summary":
         summarize_response(Path(sys.argv[2]), sys.argv[3])
