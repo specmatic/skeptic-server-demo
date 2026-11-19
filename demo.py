@@ -96,6 +96,14 @@ def main() -> None:
     if action == "summary":
         summarize_response(Path(sys.argv[2]), sys.argv[3])
         return
+    if action == "assert-error":
+        response = json.loads(Path(sys.argv[2]).read_text())
+        expected_code = sys.argv[3]
+        actual_code = response.get("code")
+        if actual_code != expected_code:
+            raise SystemExit(f"Expected error code {expected_code}, got {actual_code!r}")
+        print(f"Verified error code: {actual_code}")
+        return
     if action == "prepare-request":
         prepare_lint_request(request_name=sys.argv[2] if len(sys.argv) > 2 else "lint-batch")
         return

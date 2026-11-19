@@ -46,7 +46,11 @@ run_request() {
   done
   if [[ -n "$body_file" ]]; then
     printf '\n'
-    cat "$body_file"
+    if [[ "${PRINT_REQUEST_BODY:-1}" == "1" ]]; then
+      cat "$body_file"
+    else
+      printf '[credentialed request body omitted]\n'
+    fi
     printf '\n'
   fi
   printf '\n=== Response ===\n'
