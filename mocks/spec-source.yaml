@@ -1,0 +1,25 @@
+openapi: 3.0.1
+info:
+  title: Large OpenAPI Specification Source
+  version: 1.0.0
+paths:
+  /large-openapi-at-limit.yaml:
+    get:
+      operationId: downloadOpenApiSpecificationAtLimit
+      responses:
+        '200':
+          description: Valid OpenAPI YAML exactly at configured code point limit
+          content:
+            application/yaml:
+              schema:
+                type: string
+  /large-openapi-over-limit.yaml:
+    get:
+      operationId: downloadOpenApiSpecificationOverLimit
+      responses:
+        '200':
+          description: OpenAPI YAML at 5.5 MiB, above configured limit
+          content:
+            application/yaml:
+              schema:
+                type: string
