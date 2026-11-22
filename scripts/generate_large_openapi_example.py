@@ -8,13 +8,13 @@ ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / ".demo-state" / "specmatic-examples"
 SPECS = (
     ("large-openapi-at-limit.json", "/large-openapi-at-limit.yaml", "large-openapi-5mb.yaml"),
-    ("large-openapi-over-limit.json", "/large-openapi-over-limit.yaml", "large-openapi-5_5mb.yaml"),
 )
 
 
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUTPUT_DIR / "large-openapi.json").unlink(missing_ok=True)
+    (OUTPUT_DIR / "large-openapi-over-limit.json").unlink(missing_ok=True)
     for filename, path, spec_filename in SPECS:
         spec = (ROOT / "specs" / spec_filename).read_text()
         example = {

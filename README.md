@@ -8,18 +8,18 @@ The `terminaloutput` blocks are output templates. Run-specific values use `<name
 
 Requirements: Docker, Python 3, Git, GitHub CLI, curl, OpenSSL, netcat, and a Specmatic Enterprise service-account licence.
 
-Lint server and spec-source mock run using `specmatic/enterprise:latest`. Start Docker before running the demo. The demo uses bridge networking and publishes lint server on `127.0.0.1:8000` (HTTP) or `127.0.0.1:8443` (HTTPS); Docker Desktop host networking is not required. Lint server reaches JWKS fixtures through `host.docker.internal:8765` and Specmatic spec-source mock through `host.docker.internal:8766`. An explicit host-gateway mapping also supports Docker Engine on Linux. Fixture server binds to `0.0.0.0:8765`; it serves demo public keys and existing small specs.
+Lint server and spec-source mock run using `specmatic/enterprise-snapshots:1.29.3`. Start Docker before running the demo. The demo uses bridge networking and publishes lint server on `127.0.0.1:8000` (HTTP) or `127.0.0.1:8443` (HTTPS); Docker Desktop host networking is not required. Lint server reaches JWKS fixtures through `host.docker.internal:8765` and Specmatic spec-source mock through `host.docker.internal:8766`. An explicit host-gateway mapping also supports Docker Engine on Linux. Fixture server binds to `0.0.0.0:8765`; it serves demo public keys and existing small specs.
 
-Large YAML payloads live as inspectable fixtures in `specs/`: `large-openapi-5mb.yaml` is 5,242,880 ASCII code points/bytes (5 MiB), and `large-openapi-5_5mb.yaml` is 5,767,168 (5.5 MiB). At startup, the script wraps these files as Specmatic response examples under `.demo-state/`; the YAML fixtures stay unchanged. The mock serves them from `GET /large-openapi-at-limit.yaml` and `GET /large-openapi-over-limit.yaml`.
+Large YAML fixtures live in `specs/`: 5 MiB for the smaller check, exactly 25 MiB (26,214,400 ASCII code points) for acceptance, and 25 MiB + 1 code point for rejection. Fixtures are static files. The fixture server serves both boundary files directly.
 
 Pull the image before starting:
 
 ```shell
-docker pull specmatic/enterprise:latest
+docker pull specmatic/enterprise-snapshots:1.29.3
 ```
 
 ```terminaloutput
-latest: Pulling from specmatic/enterprise
+1.29.3: Pulling from specmatic/enterprise-snapshots
 ```
 
 To use a specific image tag, set `SPECMATIC_ENTERPRISE_IMAGE=specmatic/enterprise:<tag>` when running `./demo.sh start`.
@@ -92,7 +92,7 @@ Or start with HTTPS:
 ```terminaloutput
 Starting the lint server on https://localhost:8443
 Run one scenario at a time from a second terminal. Press Ctrl-C here when done.
-Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8443:8443 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --add-host host.docker.internal:host-gateway --mount type=bind\,source=<license-file: absolute path>\,target=/specmatic-license.txt\,readonly --env SPECMATIC_LICENSE_PATH=/specmatic-license.txt --env SPECMATIC_TLS_KEYSTORE_PASSWORD --env SPECMATIC_TLS_PRIVATE_KEY_PASSWORD specmatic/enterprise:latest lint-server --port=8443 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal --tls-keystore=/demo/tls/server.p12 --tls-key-alias=lint-server
+Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8000:8000 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --add-host host.docker.internal:host-gateway --mount type=bind\,source=<license-file: absolute path>\,target=/specmatic-license.txt\,readonly --env SPECMATIC_LICENSE_PATH=/specmatic-license.txt specmatic/enterprise:latest lint-server --port=8000 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal
 {"timestamp":"<timestamp: ISO 8601 date-time, UTC>","level":"INFO","service":"lint-server","component":"server","event":"server.started","port":8443,"scheme":"https"}
 ```
 
@@ -111,7 +111,7 @@ SPECMATIC_LICENSE_CONTENT="$(cat ~/.specmatic/specmatic-license.txt)" ./demo.sh 
 ```terminaloutput
 Starting the lint server on http://127.0.0.1:8000
 Run one scenario at a time from a second terminal. Press Ctrl-C here when done.
-Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8000:8000 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --add-host host.docker.internal:host-gateway --env SPECMATIC_LICENSE_CONTENT specmatic/enterprise:latest lint-server --port=8000 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal
+Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8000:8000 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --add-host host.docker.internal:host-gateway --mount type=bind\,source=<license-file: absolute path>\,target=/specmatic-license.txt\,readonly --env SPECMATIC_LICENSE_PATH=/specmatic-license.txt specmatic/enterprise:latest lint-server --port=8000 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal
 {"timestamp":"<timestamp: ISO 8601 date-time, UTC>","level":"INFO","service":"lint-server","component":"server","event":"server.started","port":8000,"scheme":"http"}
 ```
 
@@ -124,7 +124,7 @@ SPECMATIC_LICENSE_CONTENT="$(cat ~/.specmatic/specmatic-license.txt)" ./demo.sh 
 ```terminaloutput
 Starting the lint server on https://localhost:8443
 Run one scenario at a time from a second terminal. Press Ctrl-C here when done.
-Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8443:8443 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --add-host host.docker.internal:host-gateway --env SPECMATIC_LICENSE_CONTENT --env SPECMATIC_TLS_KEYSTORE_PASSWORD --env SPECMATIC_TLS_PRIVATE_KEY_PASSWORD specmatic/enterprise:latest lint-server --port=8443 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal --tls-keystore=/demo/tls/server.p12 --tls-key-alias=lint-server
+Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8000:8000 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --add-host host.docker.internal:host-gateway --mount type=bind\,source=<license-file: absolute path>\,target=/specmatic-license.txt\,readonly --env SPECMATIC_LICENSE_PATH=/specmatic-license.txt specmatic/enterprise:latest lint-server --port=8000 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal
 {"timestamp":"<timestamp: ISO 8601 date-time, UTC>","level":"INFO","service":"lint-server","component":"server","event":"server.started","port":8443,"scheme":"https"}
 ```
 
@@ -427,7 +427,7 @@ Batch lint response:
 
 ### 9. Download hostname outside the allowlist
 
-**Request:** The batch POST with a valid demo JWT and the body from `requests/lint-unapproved-download-host.json`. The first spec uses the allowed hostname `host.docker.internal`; the second uses `localhost`. The server starts with `--allowed-spec-download-host=host.docker.internal`, so `localhost` does not match. Inside the container, `localhost` refers to the container itself.
+**Request:** The batch POST with a valid demo JWT and the body from `requests/lint-unapproved-download-host.json`. The first spec uses the allowed hostname `host.docker.internal`; the second uses `localhost`. The server starts with `--allowed-spec-download-host=host.docker.internal`, so `localhost` does not match the configured `127.0.0.1` hostname.
 
 ```shell
 ./scenarios/09-unapproved-download-host-403.sh
@@ -615,21 +615,11 @@ content-type: application/json
 
 **Expected:** HTTP 400 with `INVALID_REQUEST`. The server generates a fresh UUID that matches in the `X-Request-Id` response header and the JSON `requestId` field.
 
-### 16. YAML exactly at configured limit
+### 16. Smaller 5 MiB YAML specification
 
-**Request:** `POST /skeptic/lint/reports` with valid OpenAPI YAML containing exactly 5,242,880 Unicode code points, matching default `--max-spec-size-code-points` limit.
+**Request:** `POST /skeptic/lint/reports` with valid OpenAPI YAML containing exactly 5,242,880 Unicode code points, below the fixed 26,214,400-code-point limit.
 
-To validate a local Enterprise fix, build the image from `~/project/enterprise`:
-
-```bash
-./gradlew :executable:dockerBuild
-```
-
-Then, from this demo directory, start the server with that image. Replace `1.29.3` if your build produced a different tag:
-
-```bash
-SPECMATIC_ENTERPRISE_IMAGE=specmatic/enterprise-snapshots:1.29.3 ./demo.sh start
-```
+Use the locally built Enterprise Docker image. Start with `./demo.sh start`, optionally setting `SPECMATIC_ENTERPRISE_IMAGE`.
 
 Run the scenario from a second terminal.
 
@@ -656,31 +646,25 @@ At-limit YAML lint response:
 
 **Expected:** HTTP 200 with SARIF report. Linter may report findings. HTTP 500 `INTERNAL_ERROR` means raw syntax tree parser still rejects input at SnakeYAML's 3 MiB default.
 
-### 17. YAML above configured limit
+### 18. Static 25 MiB YAML at the shared limit
 
-**Request:** Same batch lint flow, with valid OpenAPI YAML containing 5,767,168 code points (5.5 MiB), above configured 5 MiB limit.
+The checked-in `specs/large-openapi-25mb.yaml` is exactly 26,214,400 ASCII bytes/code points (25 MiB). It is a valid OpenAPI 3.0.3 document with an `x-padding` array of short strings. Startup and scenario execution read this file; they do not generate the specification. This experiment checks document size handling, not a large number of API operations.
 
-```shell
-./scenarios/17-over-limit-yaml-422.sh
-```
+Stop any running demo first. In terminal 1, run `./demo.sh start`. It uses Docker image `specmatic/enterprise-snapshots:1.29.3`; override with `SPECMATIC_ENTERPRISE_IMAGE`. The fixed limit is 26,214,400 code points. Add `SPECMATIC_LINT_DEBUG=1` for debug logs.
 
-```terminaloutput
-=== Request ===
-POST http://127.0.0.1:8000/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
-Content-Type: application/json
-X-Request-Id: <request-id: UUID>
+In terminal 2, run `./scenarios/18-25mb-yaml-limit.sh`.
 
-[credentialed request body omitted]
+The reports API receives `requests/lint-25mb-spec.json` with a download URL pointing to the static fixture at `http://host.docker.internal:8765/specs/large-openapi-25mb.yaml`. Expect HTTP 200 and one SARIF report. The scenario fails if either is missing; lint findings themselves may be present. The full response is saved in `.demo-state/lint-25mb-spec-response.json`.
 
-=== Response ===
-HTTP 422
-Verified error code: SPEC_TOO_LARGE
-```
+Verified against the locally built Docker image: exact-limit input returns HTTP 200 and one SARIF report.
 
-**Expected:** HTTP 422 `SPEC_TOO_LARGE`; server rejects spec before lint parsing.
+Requires the same GitHub login and license as other batch scenarios. A successful request queues its report for the Insights destination configured in your license. Press Ctrl-C in terminal 1 to stop the experiment.
 
 Server logs remain visible in the first terminal. They include request IDs and HTTP outcomes for the scenarios.
+
+### 19. Reject YAML above the shared limit
+
+Run `./scenarios/19-over-25mb-yaml-422.sh`. Static `specs/large-openapi-over-25mb.yaml` contains 26,214,401 ASCII code points. The script asserts HTTP 422 and `SPEC_TOO_LARGE`; response saved in `.demo-state/lint-over-25mb-spec-response.json`.
 
 ## Insights failure and recovery
 
@@ -737,7 +721,7 @@ The polling output below is a partial example of the blocked state, with changin
 
 Restart `./demo.sh start` to reset the server’s in-memory status and config cache, then run the scenarios in order. Generated keys, JWTs, the credentialed request, logs, responses, and cache files remain under the ignored `.demo-state/` directory. Keep the README and `.demo-state/` out of shared archives.
 
-Scenarios 6, 11, and 14 submit two reports each to the Insights destination configured in the service-account licence. Scenario 16 submits one report. Scenario 17 rejects the specification before linting and submits none.
+Scenarios 6, 11, and 14 submit two reports each to the Insights destination configured in the service-account licence. Scenarios 16 and 18 submit one report each. Scenario 19 rejects the specification before linting and submits none.
 
 ## Validate the README commands
 
@@ -753,8 +737,8 @@ Validation complete: <passed-count: non-negative integer, bytes> passed, <skippe
 
 The validator reads the `shell` and following `terminaloutput` blocks in this README, executes commands in order, and checks output against the typed templates. It verifies expected exit codes, placeholder formats, request ID consistency, and JSON fields regardless of key order. It exits nonzero on a command failure, timeout, or output mismatch; captured credentials are not printed.
 
-Validation uses a temporary copy of the demo and separate available ports. It starts and stops its own HTTP and HTTPS servers, leaving an existing demo server and its `.demo-state/` directory alone. Docker must be running, GitHub CLI must already be signed in with access to the private config repository, and a valid licence must be available. Successful batch scenarios publish sample reports to the Insights destination in that licence.
+Validation uses a temporary copy of the demo and separate available ports. It starts and stops its own HTTP and HTTPS servers, leaving an existing demo server and its `.demo-state/` directory alone. Docker and the configured Enterprise image must be available, GitHub CLI must already be signed in with access to the private config repository, and a valid licence must be available. Successful batch scenarios publish sample reports to the Insights destination in that licence.
 
 The interactive `gh auth login` step is checked using the existing login. The Insights failure/recovery polling block is reported as **manual** because it requires a controllable Insights test endpoint and matching licence. The validator's own invocation is skipped to avoid recursion; these are the two skipped/manual blocks in the summary.
 
-Options: `--check-only` validates command/output pairing and placeholder types without running commands; `--no-pull` uses the cached Docker image; `--timeout SECONDS` sets the per-command/startup timeout (default: 180 seconds). The validator retries the read-only status check for up to 60 seconds while background publishing completes.
+Options: `--check-only` validates command/output pairing and placeholder types without running commands; `--timeout SECONDS` sets the per-command/startup timeout (default: 180 seconds). The validator retries the read-only status check for up to 60 seconds while background publishing completes.

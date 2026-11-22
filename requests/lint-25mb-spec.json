@@ -1,0 +1,29 @@
+{
+  "config": {
+    "git": {
+      "url": "https://github.com/specmatic/private-central-linter-config.git",
+      "branch": "main"
+    }
+  },
+  "repository": {
+    "id": "skeptic-demo-25mb-spec",
+    "name": "Skeptic Demo 25 MiB Specification",
+    "url": "https://github.com/example/skeptic-demo-apis",
+    "branch": "main",
+    "specifications": [
+      {
+        "id": "large-openapi-25mb",
+        "path": "contracts/large-openapi-25mb.yaml",
+        "profile": "default",
+        "downloadUrl": "http://host.docker.internal:8765/specs/large-openapi-25mb.yaml"
+      }
+    ]
+  },
+  "ci": {
+    "buildId": "skeptic-demo-25mb-spec-001",
+    "runAttempt": "1",
+    "metadata": {
+      "pipelineName": "skeptic-lint-server-large-yaml-limit-repro"
+    }
+  }
+}

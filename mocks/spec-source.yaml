@@ -8,17 +8,7 @@ paths:
       operationId: downloadOpenApiSpecificationAtLimit
       responses:
         '200':
-          description: Valid OpenAPI YAML exactly at configured code point limit
-          content:
-            application/yaml:
-              schema:
-                type: string
-  /large-openapi-over-limit.yaml:
-    get:
-      operationId: downloadOpenApiSpecificationOverLimit
-      responses:
-        '200':
-          description: OpenAPI YAML at 5.5 MiB, above configured limit
+          description: Valid 5 MiB OpenAPI YAML below the shared limit
           content:
             application/yaml:
               schema:

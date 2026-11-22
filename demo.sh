@@ -10,7 +10,7 @@ SPEC_SOURCE_PORT=8766
 SERVER_PORT=8000
 SERVER_URL="http://127.0.0.1:$SERVER_PORT"
 TLS_DIR="$SESSION/tls"
-ENTERPRISE_IMAGE="${SPECMATIC_ENTERPRISE_IMAGE:-specmatic/enterprise:latest}"
+ENTERPRISE_IMAGE="${SPECMATIC_ENTERPRISE_IMAGE:-specmatic/enterprise-snapshots:1.29.3}"
 CONTAINER_NAME="skeptic-lint-demo-$$"
 
 if [[ "${1:-}" != "start" || $# -gt 2 || ( $# -eq 2 && "$2" != "--https" ) ]]; then
@@ -162,6 +162,9 @@ SERVER_COMMAND+=(
   --allowed-config-repo-url="https://github.com/specmatic/private-central-linter-config.git"
   --allowed-spec-download-host=host.docker.internal
 )
+if [[ "${SPECMATIC_LINT_DEBUG:-0}" == 1 ]]; then
+  SERVER_COMMAND+=(--debug)
+fi
 if [[ "${2:-}" == "--https" ]]; then
   SERVER_COMMAND+=(--tls-keystore=/demo/tls/server.p12 --tls-key-alias=lint-server)
 fi

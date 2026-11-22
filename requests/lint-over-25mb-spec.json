@@ -6,21 +6,21 @@
     }
   },
   "repository": {
-    "id": "skeptic-demo-large-spec-over-limit",
-    "name": "Skeptic Demo Large Specification Over Limit",
+    "id": "skeptic-demo-over-25mb",
+    "name": "Skeptic Demo 25 MiB Specification",
     "url": "https://github.com/example/skeptic-demo-apis",
     "branch": "main",
     "specifications": [
       {
-        "id": "large-openapi-over-limit",
-        "path": "contracts/large-openapi-over-limit.yaml",
+        "id": "large-openapi-over-25mb",
+        "path": "contracts/large-openapi-over-25mb.yaml",
         "profile": "default",
-        "downloadUrl": "http://host.docker.internal:8766/large-openapi-over-limit.yaml"
+        "downloadUrl": "http://host.docker.internal:8765/specs/large-openapi-over-25mb.yaml"
       }
     ]
   },
   "ci": {
-    "buildId": "skeptic-demo-large-spec-over-limit-001",
+    "buildId": "skeptic-demo-25mb-spec-001",
     "runAttempt": "1",
     "metadata": {
       "pipelineName": "skeptic-lint-server-large-yaml-limit-repro"
