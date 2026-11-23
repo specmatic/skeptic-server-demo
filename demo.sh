@@ -67,6 +67,7 @@ fi
 printf '%s\n' "$SERVER_URL" > "$STATE/server-url"
 printf '%s\n' "$SERVER_PORT" > "$STATE/server-port"
 python3 "$ROOT/fixture_server.py" prepare
+python3 "$ROOT/demo.py" cleanup-legacy-requests
 python3 "$ROOT/scripts/generate_large_openapi_example.py"
 DEMO_FIXTURE_PORT=8765 python3 "$ROOT/fixture_server.py" >"$STATE/fixtures.log" 2>&1 &
 FIXTURE_PID=$!
@@ -159,7 +160,7 @@ SERVER_COMMAND+=(
   --jwt-jwks-url="$CONTAINER_FIXTURE_URL/jwks.json"
   --jwt-audience=skeptic-lint-demo
   --jwt-match='scope="lint:run reports:read"'
-  --allowed-config-repo-url="https://github.com/specmatic/private-central-linter-config.git"
+  --allowed-config-repo-url="${DEMO_ALLOWED_CONFIG_REPO_URL:-https://github.com/specmatic/private-central-linter-config.git}"
   --allowed-spec-download-host=host.docker.internal
 )
 if [[ "${SPECMATIC_LINT_DEBUG:-0}" == 1 ]]; then

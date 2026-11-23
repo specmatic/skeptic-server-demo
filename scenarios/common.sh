@@ -42,14 +42,18 @@ run_request() {
 
   printf '\n=== Request ===\n%s %s\n' "$method" "$url"
   for header in ${headers[@]+"${headers[@]}"}; do
-    printf '%s\n' "$header"
+    if [[ "$header" == Authorization:* ]]; then
+      printf 'Authorization: Bearer [redacted]\n'
+    else
+      printf '%s\n' "$header"
+    fi
   done
   if [[ -n "$body_file" ]]; then
     printf '\n'
-    if [[ "${PRINT_REQUEST_BODY:-1}" == "1" ]]; then
+    if [[ "${PRINT_REQUEST_BODY:-0}" == "1" ]]; then
       cat "$body_file"
     else
-      printf '[credentialed request body omitted]\n'
+      printf '[request body omitted: may contain credentials]\n'
     fi
     printf '\n'
   fi
@@ -63,14 +67,7 @@ run_request() {
 
 submit_lint_fixture() {
   local request_name="$1" request_id="$2"
-  shift 2
   require_server
   python3 "$ROOT/demo.py" token good
-  python3 "$ROOT/demo.py" prepare-request "$request_name"
-  run_request -sS \
-    -H "Authorization: Bearer $(cat "$STATE/good.jwt")" \
-    -H 'Content-Type: application/json' \
-    -H "X-Request-Id: $request_id" \
-    --data-binary "@$STATE/$request_name-authenticated.json" \
-    "$@" "$SERVER_URL/skeptic/lint/reports"
+  DEMO_REQUEST_ID="$request_id" python3 "$ROOT/demo.py" prepare-request "$request_name"
 }

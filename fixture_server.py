@@ -73,6 +73,7 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path in (
             "/specs/orders-api.yaml", "/specs/payments-api.yaml",
             "/specs/orders-api-clean.yaml", "/specs/payments-api-clean.yaml",
+            "/specs/config-refresh-marker.yaml",
             "/specs/large-openapi-25mb.yaml", "/specs/large-openapi-over-25mb.yaml",
         ):
             name = self.path.rsplit("/", 1)[-1]
