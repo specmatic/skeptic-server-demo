@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "$0")/common.sh"
+require_server
+
+python3 "$ROOT/demo.py" token good
+python3 "$ROOT/demo.py" prepare-request lint-large-spec lint-large-spec-response 200

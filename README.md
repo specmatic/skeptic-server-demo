@@ -1,23 +1,25 @@
 # Specmatic Lint Server demo
 
-This demo uses local API-spec and JWKS fixtures plus the private central configuration repository. Each numbered scenario makes exactly one HTTP request to the lint server. Run them individually to inspect each request, response, and the corresponding server logs. Each scenario prints the request method, URL, headers, and body (when present) before the response. Authorization headers include the actual demo bearer token so its claims can be inspected.
+This demo uses local API-spec and JWKS fixtures plus a private central configuration repository. Config credentials go in `config.git.token`; URL userinfo is rejected. The demo builds each lint request in memory, sends it, then saves only the response. Request bodies and credentials stay out of terminal output and files.
 
-The `terminaloutput` blocks are output templates. Run-specific values use `<name: type or format>`, for example `<request-id: UUID>` or `<timestamp: ISO 8601 date-time, UTC>`. Repeated placeholder names refer to the same value within one request; each request generates new values. Integer placeholders are unquoted, so these templates are illustrative rather than literal JSON. Request bodies are abbreviated as typed placeholders; credentials are represented by placeholders. Scenario responses were checked against the running HTTPS server; HTTP runs use HTTP/1.1 status lines. Setup, startup, and Insights recovery output is representative. Finding counts and maturity depend on the configuration revision.
+The `terminaloutput` blocks are output templates. Run-specific values use `<name: type or format>`, for example `<request-id: UUID>` or `<timestamp: ISO 8601 date-time, UTC>`. Repeated placeholder names refer to the same value within one request; each request generates new values. Integer placeholders are unquoted, so these templates are illustrative rather than literal JSON. Request bodies that may contain credentials are omitted. Scenario responses were checked against the running HTTPS server; HTTP runs use HTTP/1.1 status lines. Setup, startup, and Insights recovery output is representative. Finding counts and maturity depend on the configuration revision.
 
 ## Setup
 
 Requirements: Docker, Python 3, Git, GitHub CLI, curl, OpenSSL, netcat, and a Specmatic Enterprise service-account licence.
 
-The server runs using `specmatic/enterprise:latest`. Start Docker before running the demo. The demo uses bridge networking and publishes the lint server on `127.0.0.1:8000` (HTTP) or `127.0.0.1:8443` (HTTPS); Docker Desktop host networking is not required. The container reaches the JWKS and spec fixtures through `host.docker.internal:8765`. An explicit host-gateway mapping also supports Docker Engine on Linux. The fixture server binds to `0.0.0.0:8765` so containers can reach it; it serves only demo public keys and specification files.
+Lint server and spec-source mock run using `specmatic/enterprise-snapshots:1.29.3`. Start Docker before running the demo. The demo uses bridge networking and publishes lint server on `127.0.0.1:8000` (HTTP) or `127.0.0.1:8443` (HTTPS); Docker Desktop host networking is not required. Lint server reaches JWKS fixtures through `host.docker.internal:8765` and Specmatic spec-source mock through `host.docker.internal:8766`. An explicit host-gateway mapping also supports Docker Engine on Linux. Fixture server binds to `0.0.0.0:8765`; it serves demo public keys and existing small specs.
+
+Large YAML fixtures live in `specs/`: 5 MiB for the smaller check, exactly 25 MiB (26,214,400 ASCII code points) for acceptance, and 25 MiB + 1 code point for rejection. Fixtures are static files. The fixture server serves both boundary files directly.
 
 Pull the image before starting:
 
 ```shell
-docker pull specmatic/enterprise:latest
+docker pull specmatic/enterprise-snapshots:1.29.3
 ```
 
 ```terminaloutput
-latest: Pulling from specmatic/enterprise
+1.29.3: Pulling from specmatic/enterprise-snapshots
 ```
 
 To use a specific image tag, set `SPECMATIC_ENTERPRISE_IMAGE=specmatic/enterprise:<tag>` when running `./demo.sh start`.
@@ -34,7 +36,7 @@ gh auth login --hostname github.com
 ✓ Authentication complete.
 ```
 
-The batch scenario retrieves your token just before building the request using `gh auth token --hostname github.com`. No token environment variable is needed. The generated request contains the token in its config repository URL and is printed by the scenario; do not share that output or the generated request file.
+Batch scenarios pass the token as `config.git.token`. For existing demo scenarios, the token comes from `DEMO_CONFIG_TOKEN` or, as a convenience, `gh auth token --hostname github.com`. The GitHub CLI token may be a user PAT; it does not validate GitHub App issuance or rotation. Use your approved App token broker for client validation. No authenticated request files are created. On startup, the demo removes only the exact legacy request filenames it generated.
 
 ## Demonstrate a missing licence
 
@@ -77,7 +79,7 @@ Start with HTTP:
 ```terminaloutput
 Starting the lint server on http://127.0.0.1:8000
 Run one scenario at a time from a second terminal. Press Ctrl-C here when done.
-Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8000:8000 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --mount type=bind\,source=<license-file: absolute path>\,target=/specmatic-license.txt\,readonly --env SPECMATIC_LICENSE_PATH=/specmatic-license.txt specmatic/enterprise:latest lint-server --port=8000 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal
+Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8000:8000 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --add-host host.docker.internal:host-gateway --mount type=bind\,source=<license-file: absolute path>\,target=/specmatic-license.txt\,readonly --env SPECMATIC_LICENSE_PATH=/specmatic-license.txt specmatic/enterprise:latest lint-server --port=8000 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal
 {"timestamp":"<timestamp: ISO 8601 date-time, UTC>","level":"INFO","service":"lint-server","component":"server","event":"server.started","port":8000,"scheme":"http"}
 ```
 
@@ -90,7 +92,7 @@ Or start with HTTPS:
 ```terminaloutput
 Starting the lint server on https://localhost:8443
 Run one scenario at a time from a second terminal. Press Ctrl-C here when done.
-Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8443:8443 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --mount type=bind\,source=<license-file: absolute path>\,target=/specmatic-license.txt\,readonly --env SPECMATIC_LICENSE_PATH=/specmatic-license.txt --env SPECMATIC_TLS_KEYSTORE_PASSWORD --env SPECMATIC_TLS_PRIVATE_KEY_PASSWORD specmatic/enterprise:latest lint-server --port=8443 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal --tls-keystore=/demo/tls/server.p12 --tls-key-alias=lint-server
+Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8000:8000 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --add-host host.docker.internal:host-gateway --mount type=bind\,source=<license-file: absolute path>\,target=/specmatic-license.txt\,readonly --env SPECMATIC_LICENSE_PATH=/specmatic-license.txt specmatic/enterprise:latest lint-server --port=8000 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal
 {"timestamp":"<timestamp: ISO 8601 date-time, UTC>","level":"INFO","service":"lint-server","component":"server","event":"server.started","port":8443,"scheme":"https"}
 ```
 
@@ -109,7 +111,7 @@ SPECMATIC_LICENSE_CONTENT="$(cat ~/.specmatic/specmatic-license.txt)" ./demo.sh 
 ```terminaloutput
 Starting the lint server on http://127.0.0.1:8000
 Run one scenario at a time from a second terminal. Press Ctrl-C here when done.
-Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8000:8000 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --env SPECMATIC_LICENSE_CONTENT specmatic/enterprise:latest lint-server --port=8000 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal
+Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8000:8000 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --add-host host.docker.internal:host-gateway --mount type=bind\,source=<license-file: absolute path>\,target=/specmatic-license.txt\,readonly --env SPECMATIC_LICENSE_PATH=/specmatic-license.txt specmatic/enterprise:latest lint-server --port=8000 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal
 {"timestamp":"<timestamp: ISO 8601 date-time, UTC>","level":"INFO","service":"lint-server","component":"server","event":"server.started","port":8000,"scheme":"http"}
 ```
 
@@ -122,7 +124,7 @@ SPECMATIC_LICENSE_CONTENT="$(cat ~/.specmatic/specmatic-license.txt)" ./demo.sh 
 ```terminaloutput
 Starting the lint server on https://localhost:8443
 Run one scenario at a time from a second terminal. Press Ctrl-C here when done.
-Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8443:8443 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --env SPECMATIC_LICENSE_CONTENT --env SPECMATIC_TLS_KEYSTORE_PASSWORD --env SPECMATIC_TLS_PRIVATE_KEY_PASSWORD specmatic/enterprise:latest lint-server --port=8443 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal --tls-keystore=/demo/tls/server.p12 --tls-key-alias=lint-server
+Running command: docker run --rm --name skeptic-lint-demo-<process-id: positive integer> --publish 127.0.0.1:8000:8000 --mount type=bind\,source=<demo-directory: absolute path>/.demo-state/session-<session-time: yyyyMMdd-HHmmss>-<process-id: positive integer>\,target=/demo --workdir /demo --add-host host.docker.internal:host-gateway --mount type=bind\,source=<license-file: absolute path>\,target=/specmatic-license.txt\,readonly --env SPECMATIC_LICENSE_PATH=/specmatic-license.txt specmatic/enterprise:latest lint-server --port=8000 --jwt-issuer=http://127.0.0.1:8765/demo-issuer --jwt-jwks-url=http://host.docker.internal:8765/jwks.json --jwt-audience=skeptic-lint-demo --jwt-match=scope=\"lint:run\ reports:read\" --allowed-config-repo-url=https://github.com/specmatic/private-central-linter-config.git --allowed-spec-download-host=host.docker.internal
 {"timestamp":"<timestamp: ISO 8601 date-time, UTC>","level":"INFO","service":"lint-server","component":"server","event":"server.started","port":8443,"scheme":"https"}
 ```
 
@@ -194,7 +196,7 @@ POST https://localhost:8443/skeptic/lint/reports
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
 HTTP/2 401
@@ -218,11 +220,11 @@ content-type: application/json
 ```terminaloutput
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
+Authorization: Bearer [redacted]
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
 HTTP/2 403
@@ -272,7 +274,7 @@ HTTP/2 200
 
 ### 6. Batch lint
 
-**Request:** `POST /skeptic/lint/reports` with two specs, a self-contained credentialed config Git URL, and a demo-generated RS256 JWT containing the required scope. The scenario retrieves the GitHub token just in time with `gh auth token --hostname github.com`, builds the request from `requests/lint-batch.json`, then saves it under `.demo-state/`.
+**Request:** `POST /skeptic/lint/reports` with two specs, a clean config Git URL, `config.git.token`, and a demo-generated RS256 JWT containing the required scope. The request is built in memory from `requests/lint-batch.json`.
 
 ```shell
 ./scenarios/06-batch-lint.sh
@@ -281,11 +283,11 @@ HTTP/2 200
 ```terminaloutput
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
+Authorization: Bearer [redacted]
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
 HTTP 200
@@ -296,7 +298,7 @@ Batch lint response:
   full response saved: .demo-state/lint-response.json
 ```
 
-**Expected:** HTTP 200 with one report per spec. The lint `result` is `failure` because the small sample specs intentionally produce findings. The full response is saved to `.demo-state/lint-response.json`. The server queues each report for background Insights publishing and returns without waiting for that work.
+**Expected:** HTTP 200 with one report per spec. The lint `result` is `failure` because the small sample specs intentionally produce findings. Only the response is saved to `.demo-state/lint-response.json`. The server queues each report for background Insights publishing and returns without waiting for that work.
 
 ### 7. Status after linting
 
@@ -344,7 +346,7 @@ HTTP/2 200
 
 ### 8. Invalid config repository token
 
-**Request:** The batch POST with a valid demo JWT but a deliberately invalid GitHub token in the config repository URL. This demonstrates a bad central config credential without setting `CENTRAL_CONFIG_REPO_TOKEN` or changing your GitHub CLI login.
+**Request:** The batch POST with a valid demo JWT and deliberately invalid `config.git.token`. URL remains credential-free.
 
 ```shell
 ./scenarios/08-invalid-config-token.sh
@@ -353,21 +355,21 @@ HTTP/2 200
 ```terminaloutput
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
+Authorization: Bearer [redacted]
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
-{"code":"CONFIG_UNAVAILABLE","message":"Configuration source is temporarily unavailable.","requestId":"<request-id: UUID>"}
-HTTP 503
+HTTP 422
+{"code":"INVALID_CONFIG_TOKEN","message":"The configuration repository access token was rejected or has expired.","requestId":"<request-id: UUID>"}
 ```
 
-**Expected:** HTTP 503 with error code `CONFIG_UNAVAILABLE` and message `Configuration source is temporarily unavailable.` The JWT passes authentication, but the server cannot fetch the private configuration with the invalid GitHub token. No lint reports are produced. The generated request is saved to `.demo-state/lint-batch-invalid-config-token.json`.
+**Expected:** HTTP 422 with error code `INVALID_CONFIG_TOKEN`. No lint reports are produced. The request body and dummy token are not saved.
 
 
-To demonstrate a failed credential replacement with a warm cache, start a fresh server and run these three scenarios in sequence within five minutes. Use the same GitHub CLI login for both valid requests.
+To demonstrate rejected-token handling with a warm cache, start a fresh server and run these three scenarios in sequence. Use same valid token source for both successful requests.
 
 ```shell
 ./scenarios/06-batch-lint.sh
@@ -378,11 +380,11 @@ To demonstrate a failed credential replacement with a warm cache, start a fresh 
 ```terminaloutput
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
+Authorization: Bearer [redacted]
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
 HTTP 200
@@ -394,23 +396,23 @@ Batch lint response:
 
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
+Authorization: Bearer [redacted]
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
-{"code":"CONFIG_UNAVAILABLE","message":"Configuration source is temporarily unavailable.","requestId":"<request-id: UUID>"}
-HTTP 503
+HTTP 422
+{"code":"INVALID_CONFIG_TOKEN","message":"The configuration repository access token was rejected or has expired.","requestId":"<request-id: UUID>"}
 
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
+Authorization: Bearer [redacted]
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
 HTTP 200
@@ -421,11 +423,11 @@ Batch lint response:
   full response saved: .demo-state/lint-response.json
 ```
 
-**Expected:** HTTP 200, then HTTP 503 with `CONFIG_UNAVAILABLE`, then HTTP 200. The middle request fails despite the cached snapshot. The final request succeeds with the original credentials. The two successful requests each queue two reports.
+**Expected:** HTTP 200, then HTTP 422 with `INVALID_CONFIG_TOKEN`, then HTTP 200. Rejected token does not replace last accepted credential. The two successful requests each queue two reports.
 
 ### 9. Download hostname outside the allowlist
 
-**Request:** The batch POST with a valid demo JWT and the body from `requests/lint-unapproved-download-host.json`. The first spec uses the allowed hostname `host.docker.internal`; the second uses `localhost`. The server starts with `--allowed-spec-download-host=host.docker.internal`, so `localhost` does not match. Inside the container, `localhost` refers to the container itself.
+**Request:** The batch POST with a valid demo JWT and the body from `requests/lint-unapproved-download-host.json`. The first spec uses the allowed hostname `host.docker.internal`; the second uses `localhost`. The server starts with `--allowed-spec-download-host=host.docker.internal`, so `localhost` does not match the configured `127.0.0.1` hostname.
 
 ```shell
 ./scenarios/09-unapproved-download-host-403.sh
@@ -434,11 +436,11 @@ Batch lint response:
 ```terminaloutput
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
+Authorization: Bearer [redacted]
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
 {"code":"SPEC_URL_NOT_ALLOWED","message":"The downloadUrl host is not allowed.","details":[{"field":"repository.specifications[1].downloadUrl","message":"The downloadUrl host is not allowed."}],"requestId":"<request-id: UUID>"}
@@ -458,11 +460,11 @@ HTTP 403
 ```terminaloutput
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
+Authorization: Bearer [redacted]
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
 {"code":"CONFIG_URL_NOT_ALLOWED","message":"Configuration repository URL is not allowed.","requestId":"<request-id: UUID>"}
@@ -482,11 +484,11 @@ HTTP 403
 ```terminaloutput
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
+Authorization: Bearer [redacted]
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
 HTTP 200
@@ -497,7 +499,7 @@ Clean batch lint response:
   full response saved: .demo-state/lint-clean-response.json
 ```
 
-**Expected:** HTTP 200 with batch and per-spec `result` set to `success`, and zero SARIF findings under the configured `default` profile. The summary prints `0 finding(s)` for each spec. Inspect `.demo-state/lint-clean-response.json` for the full clean reports, including each SARIF run's empty `results` array. The credentialed request is saved to `.demo-state/lint-clean-batch-authenticated.json`; keep it private. As with scenario 6, this scenario uses your GitHub CLI token and queues two reports for background Insights publishing.
+**Expected:** HTTP 200 with per-spec results. Inspect `.demo-state/lint-clean-response.json` for full reports. The request body is not saved. A successful request queues reports for background Insights publishing.
 
 ### 12. Unknown profile
 
@@ -510,18 +512,14 @@ Clean batch lint response:
 ```terminaloutput
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
+Authorization: Bearer [redacted]
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
-HTTP/2 400
-x-request-id: <request-id: UUID>
-cache-control: no-store
-content-type: application/json
-
+HTTP 400
 {"code":"UNKNOWN_PROFILE","message":"Unknown profile 'demo-profile-that-does-not-exist'. Available profiles: default, internal-api, payment-api, public-api","details":[{"field":"repository.specifications[1].profile","message":"Unknown profile 'demo-profile-that-does-not-exist'. Available profiles: default, internal-api, payment-api, public-api"}],"requestId":"<request-id: UUID>"}
 ```
 
@@ -538,18 +536,14 @@ content-type: application/json
 ```terminaloutput
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
+Authorization: Bearer [redacted]
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
-HTTP/2 502
-x-request-id: <request-id: UUID>
-cache-control: no-store
-content-type: application/json
-
+HTTP 502
 {"code":"SPEC_FETCH_FAILED","message":"Specification could not be fetched.","upstreamStatus":404,"requestId":"<request-id: UUID>"}
 ```
 
@@ -566,28 +560,22 @@ DEMO_REQUEST_ID="$(python3 -c 'import uuid; print(uuid.uuid4())')" ./scenarios/1
 ```terminaloutput
 === Request ===
 POST https://localhost:8443/skeptic/lint/reports
-Authorization: Bearer <bearer-token: RS256 JWT, base64url.base64url.base64url>
+Authorization: Bearer [redacted]
 Content-Type: application/json
 X-Request-Id: <request-id: UUID>
 
-<request-body: JSON object from the scenario fixture>
+[request body omitted: may contain credentials]
 
 === Response ===
 HTTP 200
-HTTP/2 200
-x-request-id: <request-id: UUID>
-cache-control: no-store
-content-length: <response-size: non-negative integer, bytes>
-content-type: application/json
-
 Mixed batch lint response:
-  result: failure
-  orders-api-clean: success, 0 finding(s), maturity=platinum
-  payments-api: failure, 15 finding(s), maturity=baseline
-  full response saved: .demo-state/lint-mixed-response.json
+  result: <batch-result: string>
+  orders-api-clean: <spec-result: string>, <finding-count: non-negative integer, bytes> finding(s), maturity=<maturity: string>
+  payments-api: <spec-result: string>, <finding-count: non-negative integer, bytes> finding(s), maturity=<maturity: string>
+  full response saved: .demo-state/lint-mixed-batch-response.json
 ```
 
-**Expected:** HTTP 200 with `orders-api-clean` reporting `success` first, `payments-api` reporting `failure` second, and the batch reporting `failure`. Both reports are queued. The full response and headers are saved in `.demo-state/lint-mixed-response.json` and `.demo-state/lint-mixed-response.headers`.
+**Expected:** HTTP 200 with `orders-api-clean` reporting `success` first, `payments-api` reporting `failure` second, and the batch reporting `failure`. Both reports are queued. Full response is saved to `.demo-state/lint-mixed-batch-response.json`.
 
 ### 15. Malformed request ID
 
@@ -613,11 +601,60 @@ content-type: application/json
 
 **Expected:** HTTP 400 with `INVALID_REQUEST`. The server generates a fresh UUID that matches in the `X-Request-Id` response header and the JSON `requestId` field.
 
+### 16. Smaller 5 MiB YAML specification
+
+**Request:** `POST /skeptic/lint/reports` with valid OpenAPI YAML containing exactly 5,242,880 Unicode code points, below the fixed 26,214,400-code-point limit.
+
+Use the locally built Enterprise Docker image. Start with `./demo.sh start`, optionally setting `SPECMATIC_ENTERPRISE_IMAGE`.
+
+Run the scenario from a second terminal.
+
+```shell
+./scenarios/16-large-yaml-limit.sh
+```
+
+```terminaloutput
+=== Request ===
+POST http://127.0.0.1:8000/skeptic/lint/reports
+Authorization: Bearer [redacted]
+Content-Type: application/json
+X-Request-Id: <request-id: UUID>
+
+[request body omitted: may contain credentials]
+
+=== Response ===
+HTTP 200
+At-limit YAML lint response:
+  result: <batch-result: string>
+  large-openapi-at-limit: <spec-result: string>, <finding-count: non-negative integer, bytes> finding(s), maturity=<maturity: string>
+  full response saved: .demo-state/lint-large-spec-response.json
+```
+
+**Expected:** HTTP 200 with SARIF report. Linter may report findings. HTTP 500 `INTERNAL_ERROR` means raw syntax tree parser still rejects input at SnakeYAML's 3 MiB default.
+
+### 18. Static 25 MiB YAML at the shared limit
+
+The checked-in `specs/large-openapi-25mb.yaml` is exactly 26,214,400 ASCII bytes/code points (25 MiB). It is a valid OpenAPI 3.0.3 document with an `x-padding` array of short strings. Startup and scenario execution read this file; they do not generate the specification. This experiment checks document size handling, not a large number of API operations.
+
+Stop any running demo first. In terminal 1, run `./demo.sh start`. It uses Docker image `specmatic/enterprise-snapshots:1.29.3`; override with `SPECMATIC_ENTERPRISE_IMAGE`. The fixed limit is 26,214,400 code points. Add `SPECMATIC_LINT_DEBUG=1` for debug logs.
+
+In terminal 2, run `./scenarios/18-25mb-yaml-limit.sh`.
+
+The reports API receives `requests/lint-25mb-spec.json` with a download URL pointing to the static fixture at `http://host.docker.internal:8765/specs/large-openapi-25mb.yaml`. Expect HTTP 200 and one SARIF report. The scenario fails if either is missing; lint findings themselves may be present. The full response is saved in `.demo-state/lint-25mb-spec-response.json`.
+
+Verified against the locally built Docker image: exact-limit input returns HTTP 200 and one SARIF report.
+
+Requires the same GitHub login and license as other batch scenarios. A successful request queues its report for the Insights destination configured in your license. Press Ctrl-C in terminal 1 to stop the experiment.
+
 Server logs remain visible in the first terminal. They include request IDs and HTTP outcomes for the scenarios.
+
+### 19. Reject YAML above the shared limit
+
+Run `./scenarios/19-over-25mb-yaml-422.sh`. Static `specs/large-openapi-over-25mb.yaml` contains 26,214,401 ASCII code points. The script asserts HTTP 422 and `SPEC_TOO_LARGE`; response saved in `.demo-state/lint-over-25mb-spec-response.json`.
 
 ## Insights failure and recovery
 
-Run this walkthrough separately on a fresh demo server. It requires a service-account licence pointing to a controllable Insights test endpoint. The lint server publishes to the Insights URL in its licence, and `./demo.sh start` starts only the JWT and spec fixtures.
+Run this walkthrough separately on a fresh demo server. It requires a service-account licence pointing to a controllable Insights test endpoint. The lint server publishes to the Insights URL in its licence, and `./demo.sh start` starts JWT and specification fixtures plus the Specmatic source mock.
 
 The polling output below is a partial example of the blocked state, with changing timestamps and retry counts represented by typed placeholders.
 
@@ -668,11 +705,29 @@ The polling output below is a partial example of the blocked state, with changin
 
 ## Repeat the demo
 
-Restart `./demo.sh start` to reset the server’s in-memory status and config cache, then run the scenarios in order. Generated keys, JWTs, the credentialed request, logs, responses, and cache files remain under the ignored `.demo-state/` directory. Keep the README and `.demo-state/` out of shared archives.
+Restart `./demo.sh start` to reset the server’s in-memory status and config cache, then run the scenarios in order. Generated keys, JWTs, logs, responses, and cache files remain under the ignored `.demo-state/` directory. No config token or authenticated request body is written there. Keep `.demo-state/` out of shared archives.
 
-Each run of a successful batch scenario (6, 11, or 14) submits two sample reports to the Insights destination configured in the service-account licence.
+Scenarios 6, 11, and 14 submit two reports each to the Insights destination configured in the service-account licence. Scenarios 16 and 18 submit one report each. Scenario 19 rejects the specification before linting and submits none.
 
 ## Validate the README commands
+
+### Validate config repository refresh
+
+Use the dedicated [config repository cache walkthrough](config-repo-cache-scenarios/README.md) for the approved App-token flow, background refresh, token rotation, and controlled local checks. One runner lives at `config-repo-cache-scenarios/run.sh`.
+
+Local regression commands (unit tests and README syntax only; no network services):
+
+```shell
+python3 -B -m unittest discover -s tests -v && python3 -B -m unittest discover -s jwt-auth-scenarios/tests -v && python3 scripts/validate_readme_commands.py --check-only
+```
+
+```terminaloutput
+OK
+OK
+PASS: 28 command/output pairs; all placeholder types recognized.
+```
+
+Run the full isolated Docker walkthrough with the already-cached patched image using `--no-pull`; successful lint requests publish to the configured Insights destination, so use a test license.
 
 Run the automated walkthrough with one command:
 
@@ -681,13 +736,13 @@ python3 scripts/validate_readme_commands.py
 ```
 
 ```terminaloutput
-Validation complete: 24 passed, 2 skipped/manual, 0 failed.
+Validation complete: <passed-count: non-negative integer, bytes> passed, <skipped-count: non-negative integer, bytes> skipped/manual, 0 failed.
 ```
 
 The validator reads the `shell` and following `terminaloutput` blocks in this README, executes commands in order, and checks output against the typed templates. It verifies expected exit codes, placeholder formats, request ID consistency, and JSON fields regardless of key order. It exits nonzero on a command failure, timeout, or output mismatch; captured credentials are not printed.
 
-Validation uses a temporary copy of the demo and separate available ports. It starts and stops its own HTTP and HTTPS servers, leaving an existing demo server and its `.demo-state/` directory alone. Docker must be running, GitHub CLI must already be signed in with access to the private config repository, and a valid licence must be available. Successful batch scenarios publish sample reports to the Insights destination in that licence.
+Validation uses a temporary copy of the demo and separate available ports. It starts and stops its own HTTP and HTTPS servers, leaving an existing demo server and its `.demo-state/` directory alone. Docker and the configured Enterprise image must be available, GitHub CLI must already be signed in with access to the private config repository, and a valid licence must be available. Successful batch scenarios publish sample reports to the Insights destination in that licence.
 
 The interactive `gh auth login` step is checked using the existing login. The Insights failure/recovery polling block is reported as **manual** because it requires a controllable Insights test endpoint and matching licence. The validator's own invocation is skipped to avoid recursion; these are the two skipped/manual blocks in the summary.
 
-Options: `--check-only` validates command/output pairing and placeholder types without running commands; `--no-pull` uses the cached Docker image; `--timeout SECONDS` sets the per-command/startup timeout (default: 180 seconds). The validator retries the read-only status check for up to 60 seconds while background publishing completes.
+Options: `--check-only` validates command/output pairing and placeholder types without running commands; `--timeout SECONDS` sets the per-command/startup timeout (default: 180 seconds). The validator retries the read-only status check for up to 60 seconds while background publishing completes.

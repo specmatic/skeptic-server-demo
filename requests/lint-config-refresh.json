@@ -1,0 +1,29 @@
+{
+  "config": {
+    "git": {
+      "url": "https://github.com/specmatic/private-central-linter-config.git",
+      "branch": "main"
+    }
+  },
+  "repository": {
+    "id": "skeptic-demo-config-refresh",
+    "name": "Skeptic Demo Config Refresh",
+    "url": "https://github.com/example/skeptic-demo-apis",
+    "branch": "main",
+    "specifications": [
+      {
+        "id": "config-refresh-marker",
+        "path": "contracts/config-refresh-marker.yaml",
+        "profile": "default",
+        "downloadUrl": "http://host.docker.internal:8765/specs/config-refresh-marker.yaml"
+      }
+    ]
+  },
+  "ci": {
+    "buildId": "skeptic-demo-config-refresh-001",
+    "runAttempt": "1",
+    "metadata": {
+      "pipelineName": "skeptic-lint-config-refresh-validation"
+    }
+  }
+}

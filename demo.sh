@@ -6,10 +6,11 @@ STATE="$ROOT/.demo-state"
 SESSION="$STATE/session-$(date +%Y%m%d-%H%M%S)-$$"
 FIXTURE_URL="http://127.0.0.1:8765"
 CONTAINER_FIXTURE_URL="http://host.docker.internal:8765"
+SPEC_SOURCE_PORT=8766
 SERVER_PORT=8000
 SERVER_URL="http://127.0.0.1:$SERVER_PORT"
 TLS_DIR="$SESSION/tls"
-ENTERPRISE_IMAGE="${SPECMATIC_ENTERPRISE_IMAGE:-specmatic/enterprise:latest}"
+ENTERPRISE_IMAGE="${SPECMATIC_ENTERPRISE_IMAGE:-specmatic/enterprise-snapshots:1.29.3}"
 CONTAINER_NAME="skeptic-lint-demo-$$"
 
 if [[ "${1:-}" != "start" || $# -gt 2 || ( $# -eq 2 && "$2" != "--https" ) ]]; then
@@ -66,10 +67,16 @@ fi
 printf '%s\n' "$SERVER_URL" > "$STATE/server-url"
 printf '%s\n' "$SERVER_PORT" > "$STATE/server-port"
 python3 "$ROOT/fixture_server.py" prepare
+python3 "$ROOT/demo.py" cleanup-legacy-requests
+python3 "$ROOT/scripts/generate_large_openapi_example.py"
 DEMO_FIXTURE_PORT=8765 python3 "$ROOT/fixture_server.py" >"$STATE/fixtures.log" 2>&1 &
 FIXTURE_PID=$!
 stop_fixtures() {
   docker stop "$CONTAINER_NAME" >/dev/null 2>&1 || true
+  docker stop "${CONTAINER_NAME}-spec-source" >/dev/null 2>&1 || true
+  if [[ -n "${SOURCE_MOCK_PID:-}" ]]; then
+    wait "$SOURCE_MOCK_PID" 2>/dev/null || true
+  fi
   kill "$FIXTURE_PID" 2>/dev/null || true
   wait "$FIXTURE_PID" 2>/dev/null || true
 }
@@ -84,6 +91,46 @@ if ! curl -fsS "$FIXTURE_URL/jwks.json" >/dev/null 2>&1; then
   exit 1
 fi
 
+SOURCE_MOCK_COMMAND=(
+  docker run --rm --name "${CONTAINER_NAME}-spec-source"
+  --publish "127.0.0.1:$SPEC_SOURCE_PORT:$SPEC_SOURCE_PORT"
+  --add-host host.docker.internal:host-gateway
+  --mount "type=bind,source=$ROOT,target=/demo,readonly"
+  --workdir /demo
+)
+if [[ -n "${SPECMATIC_LICENSE_CONTENT:-}" ]]; then
+  SOURCE_MOCK_COMMAND+=(--env SPECMATIC_LICENSE_CONTENT)
+elif [[ -n "${SPECMATIC_LICENSE_PATH:-}" || -f "$HOME/.specmatic/specmatic-license.txt" ]]; then
+  LICENSE_FILE="${SPECMATIC_LICENSE_PATH:-$HOME/.specmatic/specmatic-license.txt}"
+  SOURCE_MOCK_COMMAND+=(
+    --mount "type=bind,source=$LICENSE_FILE,target=/specmatic-license.txt,readonly"
+    --env SPECMATIC_LICENSE_PATH=/specmatic-license.txt
+  )
+fi
+SOURCE_MOCK_COMMAND+=(
+  "$ENTERPRISE_IMAGE" mock
+  --host=0.0.0.0
+  --port="$SPEC_SOURCE_PORT"
+  --noConsoleLog
+  --data=/demo/.demo-state/specmatic-examples
+  /demo/mocks/spec-source.yaml
+)
+{
+  printf 'Starting Specmatic spec-source mock:'
+  printf ' %q' "${SOURCE_MOCK_COMMAND[@]}"
+  printf '\n'
+  "${SOURCE_MOCK_COMMAND[@]}"
+} >"$STATE/spec-source-mock.log" 2>&1 &
+SOURCE_MOCK_PID=$!
+for _ in {1..60}; do
+  if nc -z -w 1 127.0.0.1 "$SPEC_SOURCE_PORT" >/dev/null 2>&1; then break; fi
+  sleep 0.5
+done
+if ! nc -z -w 1 127.0.0.1 "$SPEC_SOURCE_PORT" >/dev/null 2>&1; then
+  echo "Specmatic spec-source mock did not start. See .demo-state/spec-source-mock.log" >&2
+  exit 1
+fi
+
 echo "Starting the lint server on $SERVER_URL"
 echo "Run one scenario at a time from a second terminal. Press Ctrl-C here when done."
 cd "$SESSION"
@@ -93,10 +140,7 @@ SERVER_COMMAND=(
   --mount "type=bind,source=$SESSION,target=/demo"
   --workdir /demo
 )
-# Docker Desktop provides this DNS name; native Docker Engine needs a mapping.
-if [[ "$(docker info --format '{{.OperatingSystem}}')" != *"Docker Desktop"* ]]; then
-  SERVER_COMMAND+=(--add-host host.docker.internal:host-gateway)
-fi
+SERVER_COMMAND+=(--add-host host.docker.internal:host-gateway)
 if [[ -n "${SPECMATIC_LICENSE_CONTENT:-}" ]]; then
   SERVER_COMMAND+=(--env SPECMATIC_LICENSE_CONTENT)
 elif [[ -n "${SPECMATIC_LICENSE_PATH:-}" || -f "$HOME/.specmatic/specmatic-license.txt" ]]; then
@@ -116,9 +160,12 @@ SERVER_COMMAND+=(
   --jwt-jwks-url="$CONTAINER_FIXTURE_URL/jwks.json"
   --jwt-audience=skeptic-lint-demo
   --jwt-match='scope="lint:run reports:read"'
-  --allowed-config-repo-url="https://github.com/specmatic/private-central-linter-config.git"
+  --allowed-config-repo-url="${DEMO_ALLOWED_CONFIG_REPO_URL:-https://github.com/specmatic/private-central-linter-config.git}"
   --allowed-spec-download-host=host.docker.internal
 )
+if [[ "${SPECMATIC_LINT_DEBUG:-0}" == 1 ]]; then
+  SERVER_COMMAND+=(--debug)
+fi
 if [[ "${2:-}" == "--https" ]]; then
   SERVER_COMMAND+=(--tls-keystore=/demo/tls/server.p12 --tls-key-alias=lint-server)
 fi

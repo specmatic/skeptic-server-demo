@@ -289,20 +289,20 @@ class Runner:
 
 
 def prepare_workspace(destination: Path):
-    for name in ('demo.sh', 'demo.py', 'fixture_server.py', 'scenarios', 'requests', 'specs'):
+    for name in ('demo.sh', 'demo.py', 'fixture_server.py', 'scripts', 'mocks', 'scenarios', 'requests', 'specs'):
         source = ROOT / name
         if source.is_dir():
             shutil.copytree(source, destination / name)
         else:
             shutil.copy2(source, destination / name)
     ports = []
-    while len(ports) < 3:
+    while len(ports) < 4:
         port = free_port()
         if port not in ports:
             ports.append(port)
-    mapping = dict(zip(('8000', '8443', '8765'), map(str, ports)))
+    mapping = dict(zip(('8000', '8443', '8765', '8766'), map(str, ports)))
     for path in destination.rglob('*'):
-        if path.is_file():
+        if path.is_file() and path.stat().st_size < 1_000_000:
             text = path.read_text()
             for original, replacement in mapping.items():
                 text = text.replace(original, replacement)
