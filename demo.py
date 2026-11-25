@@ -7,7 +7,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent
 STATE = ROOT / ".demo-state"
@@ -77,10 +76,8 @@ def prepare_lint_request(invalid_config_token: bool = False, request_name: str =
         raise SystemExit("GitHub CLI returned an empty token. Run gh auth login --hostname github.com.")
 
     request = json.loads((ROOT / "requests" / f"{request_name}.json").read_text())
-    request["config"]["git"]["url"] = (
-        "https://x-access-token:" + quote(token, safe="")
-        + "@github.com/specmatic/private-central-linter-config.git"
-    )
+    request["config"]["git"]["url"] = "https://github.com/specmatic/private-central-linter-config.git"
+    request["config"]["git"]["token"] = token
     suffix = "invalid-config-token" if invalid_config_token else "authenticated"
     destination = STATE / f"{request_name}-{suffix}.json"
     destination.parent.mkdir(parents=True, exist_ok=True)

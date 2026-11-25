@@ -34,7 +34,7 @@ gh auth login --hostname github.com
 ✓ Authentication complete.
 ```
 
-The batch scenario retrieves your token just before building the request using `gh auth token --hostname github.com`. No token environment variable is needed. The generated request contains the token in its config repository URL and is printed by the scenario; do not share that output or the generated request file.
+The batch scenario retrieves your token just before building the request using `gh auth token --hostname github.com`. No token environment variable is needed. The generated request contains the token in `config.git.token` and is printed by the scenario; do not share that output or the generated request file.
 
 ## Demonstrate a missing licence
 
@@ -272,7 +272,7 @@ HTTP/2 200
 
 ### 6. Batch lint
 
-**Request:** `POST /skeptic/lint/reports` with two specs, a self-contained credentialed config Git URL, and a demo-generated RS256 JWT containing the required scope. The scenario retrieves the GitHub token just in time with `gh auth token --hostname github.com`, builds the request from `requests/lint-batch.json`, then saves it under `.demo-state/`.
+**Request:** `POST /skeptic/lint/reports` with two specs, the config repository token in `config.git.token`, and a demo-generated RS256 JWT containing the required scope. The scenario retrieves the GitHub token just in time with `gh auth token --hostname github.com`, builds the request from `requests/lint-batch.json`, then saves it under `.demo-state/`.
 
 ```shell
 ./scenarios/06-batch-lint.sh
@@ -344,7 +344,7 @@ HTTP/2 200
 
 ### 8. Invalid config repository token
 
-**Request:** The batch POST with a valid demo JWT but a deliberately invalid GitHub token in the config repository URL. This demonstrates a bad central config credential without setting `CENTRAL_CONFIG_REPO_TOKEN` or changing your GitHub CLI login.
+**Request:** The batch POST with a valid demo JWT but a deliberately invalid GitHub token in `config.git.token`. This demonstrates a bad central config credential without changing your GitHub CLI login.
 
 ```shell
 ./scenarios/08-invalid-config-token.sh
