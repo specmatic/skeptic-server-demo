@@ -73,9 +73,11 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path in (
             "/specs/orders-api.yaml", "/specs/payments-api.yaml",
             "/specs/orders-api-clean.yaml", "/specs/payments-api-clean.yaml",
+            "/specs/large-enterprise-api.json",
         ):
             name = self.path.rsplit("/", 1)[-1]
-            self.send_file(ROOT / "specs" / name, "application/yaml")
+            content_type = "application/json" if name.endswith(".json") else "application/yaml"
+            self.send_file(ROOT / "specs" / name, content_type)
         else:
             self.send_error(404)
 

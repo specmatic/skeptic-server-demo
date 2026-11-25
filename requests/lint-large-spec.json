@@ -1,0 +1,29 @@
+{
+  "config": {
+    "git": {
+      "url": "https://github.com/specmatic/private-central-linter-config.git",
+      "branch": "main"
+    }
+  },
+  "repository": {
+    "id": "skeptic-demo-enterprise",
+    "name": "Skeptic Large Spec Demo",
+    "url": "https://github.com/example/skeptic-large-spec-demo",
+    "branch": "main",
+    "specifications": [
+      {
+        "id": "large-enterprise-api",
+        "path": "contracts/large-enterprise-api.json",
+        "profile": "default",
+        "downloadUrl": "http://host.docker.internal:8765/specs/large-enterprise-api.json"
+      }
+    ]
+  },
+  "ci": {
+    "buildId": "skeptic-demo-large-001",
+    "runAttempt": "1",
+    "metadata": {
+      "pipelineName": "skeptic-lint-demo"
+    }
+  }
+}
