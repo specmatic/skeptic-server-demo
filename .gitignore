@@ -1,3 +1,5 @@
 .demo-state/
 .specmatic-linter/
 .idea/
+__pycache__/
+*.py[cod]

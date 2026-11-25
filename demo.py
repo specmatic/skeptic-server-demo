@@ -3,6 +3,7 @@
 
 import base64
 import json
+import os
 import subprocess
 import sys
 import time
@@ -10,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 STATE = ROOT / ".demo-state"
+CONFIG_REPO_URL = os.environ.get("SPECMATIC_CONFIG_REPO_URL")
 ISSUER = "http://127.0.0.1:8765/demo-issuer"
 
 
@@ -62,6 +64,8 @@ def summarize_response(path: Path, label: str) -> None:
 
 
 def prepare_lint_request(invalid_config_token: bool = False, request_name: str = "lint-batch") -> None:
+    if not CONFIG_REPO_URL:
+        raise SystemExit("Set SPECMATIC_CONFIG_REPO_URL to your config repository HTTPS URL.")
     if invalid_config_token:
         token = "deliberately-invalid-config-token"
     else:
@@ -76,7 +80,7 @@ def prepare_lint_request(invalid_config_token: bool = False, request_name: str =
         raise SystemExit("GitHub CLI returned an empty token. Run gh auth login --hostname github.com.")
 
     request = json.loads((ROOT / "requests" / f"{request_name}.json").read_text())
-    request["config"]["git"]["url"] = "https://github.com/specmatic/private-central-linter-config.git"
+    request["config"]["git"]["url"] = CONFIG_REPO_URL
     request["config"]["git"]["token"] = token
     suffix = "invalid-config-token" if invalid_config_token else "authenticated"
     destination = STATE / f"{request_name}-{suffix}.json"

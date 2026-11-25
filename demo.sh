@@ -10,6 +10,7 @@ SERVER_PORT=8000
 SERVER_URL="http://127.0.0.1:$SERVER_PORT"
 TLS_DIR="$SESSION/tls"
 ENTERPRISE_IMAGE="${SPECMATIC_ENTERPRISE_IMAGE:-specmatic/enterprise:latest}"
+CONFIG_REPO_URL="${SPECMATIC_CONFIG_REPO_URL:?Set SPECMATIC_CONFIG_REPO_URL to your config repository HTTPS URL}"
 CONTAINER_NAME="skeptic-lint-demo-$$"
 
 if [[ "${1:-}" != "start" || $# -gt 2 || ( $# -eq 2 && "$2" != "--https" ) ]]; then
@@ -116,7 +117,7 @@ SERVER_COMMAND+=(
   --jwt-jwks-url="$CONTAINER_FIXTURE_URL/jwks.json"
   --jwt-audience=skeptic-lint-demo
   --jwt-match='scope="lint:run reports:read"'
-  --allowed-config-repo-url="https://github.com/specmatic/private-central-linter-config.git"
+  --allowed-config-repo-url="$CONFIG_REPO_URL"
   --allowed-spec-download-host=host.docker.internal
 )
 if [[ "${2:-}" == "--https" ]]; then
