@@ -52,7 +52,7 @@ def free_ports(count: int) -> list[int]:
 
 
 def prepare_workspace(destination: Path, ports: list[int]) -> None:
-    for name in ("demo.sh", "demo.py", "fixture_server.py", "scenarios", "requests", "specs"):
+    for name in ("demo.sh", "demo.py", "fixture_server.py", "scenarios", "jwt-auth-scenarios", "requests", "specs"):
         source = ROOT / name
         if source.is_dir():
             shutil.copytree(source, destination / name)
@@ -200,6 +200,11 @@ def main() -> int:
                     continue
                 print(f"{prefix} RUN: {label}", flush=True)
                 if "./demo.sh start" in command:
+                    print(
+                        f"{prefix} Specmatic image: "
+                        f"{env.get('SPECMATIC_ENTERPRISE_IMAGE', 'specmatic/enterprise:latest')}",
+                        flush=True,
+                    )
                     validator.start(command, env)
                     passed += 1
                     print(f"{prefix} PASS: server healthy", flush=True)
@@ -209,6 +214,8 @@ def main() -> int:
                     if "01-health.sh" in command:
                         raise ValueError(f"Health scenario failed: {result.stderr.strip() or 'no error output'}")
                     raise ValueError(f"{label} failed (exit {result.returncode})")
+                if "jwt-auth-scenarios/run_all.py" in command:
+                    print(result.stdout, end="", flush=True)
                 if "05-status-before-lint.sh" in command or "07-status-after-lint.sh" in command:
                     status_path = workspace / ".demo-state/status-before.json"
                     if "07-status-after-lint.sh" in command:

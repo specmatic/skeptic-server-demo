@@ -34,6 +34,7 @@ class ReadmeValidatorTest(unittest.TestCase):
         commands = validator.read_commands(Path(__file__).resolve().parents[1] / 'README.md')
         self.assertIn('./demo.sh start', commands)
         self.assertIn('./scenarios/05-status-before-lint.sh', commands)
+        self.assertIn('python3 jwt-auth-scenarios/run_all.py', commands)
 
     def test_stop_server_falls_back_when_process_group_signal_is_denied(self):
         with tempfile.TemporaryDirectory() as directory:
