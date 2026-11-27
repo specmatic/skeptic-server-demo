@@ -84,11 +84,27 @@ class Validator:
 
     def stop_server(self) -> None:
         if self.server and self.server.poll() is None:
-            os.killpg(self.server.pid, signal.SIGINT)
+            try:
+                os.killpg(self.server.pid, signal.SIGINT)
+            except ProcessLookupError:
+                pass
+            except PermissionError:
+                try:
+                    self.server.send_signal(signal.SIGINT)
+                except (ProcessLookupError, PermissionError):
+                    pass
             try:
                 self.server.wait(timeout=10)
             except subprocess.TimeoutExpired:
-                os.killpg(self.server.pid, signal.SIGKILL)
+                try:
+                    os.killpg(self.server.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                except PermissionError:
+                    try:
+                        self.server.kill()
+                    except (ProcessLookupError, PermissionError):
+                        pass
                 self.server.wait()
         self.server = None
 
