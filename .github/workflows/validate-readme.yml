@@ -17,5 +17,22 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Set up Specmatic license
+        env:
+          SPECMATIC_LICENSE_KEY: ${{ secrets.SPECMATIC_LICENSE_KEY }}
+        run: |
+          mkdir -p "$HOME/.specmatic"
+          printf '%s\n' "$SPECMATIC_LICENSE_KEY" > "$HOME/.specmatic/specmatic-license.txt"
+          chmod 600 "$HOME/.specmatic/specmatic-license.txt"
+
+      - name: Authenticate GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth setup-git
+          echo "$GH_TOKEN" | gh auth login --hostname github.com --with-token
+
       - name: Run validate README script
-        run: python3 scripts/validate_readme_commands.py --check-only
+        env:
+          SPECMATIC_CONFIG_REPO_URL: ${{ secrets.SPECMATIC_CONFIG_REPO_URL }}
+        run: python3 scripts/validate_readme_commands.py
