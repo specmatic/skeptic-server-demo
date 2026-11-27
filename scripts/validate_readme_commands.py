@@ -88,10 +88,10 @@ class Validator:
                 os.killpg(self.server.pid, signal.SIGINT)
             except ProcessLookupError:
                 pass
-            except OSError:
+            except PermissionError:
                 try:
                     self.server.send_signal(signal.SIGINT)
-                except OSError:
+                except ProcessLookupError:
                     pass
             try:
                 self.server.wait(timeout=10)
@@ -100,11 +100,8 @@ class Validator:
                     os.killpg(self.server.pid, signal.SIGKILL)
                 except ProcessLookupError:
                     pass
-                except OSError:
-                    try:
-                        self.server.kill()
-                    except OSError:
-                        pass
+                except PermissionError:
+                    self.server.kill()
                 self.server.wait()
         self.server = None
 
@@ -232,6 +229,9 @@ if __name__ == "__main__":
         sys.exit(main())
     except (ValueError, OSError, subprocess.SubprocessError, json.JSONDecodeError) as error:
         print(f"FAIL: {error}", file=sys.stderr)
+        if isinstance(error, OSError):
+            import traceback
+            traceback.print_exc(file=sys.stderr)
         sys.exit(1)
     except KeyboardInterrupt:
         print("Validation interrupted; owned processes cleaned up.", file=sys.stderr)
