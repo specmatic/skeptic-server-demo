@@ -88,10 +88,10 @@ class Validator:
                 os.killpg(self.server.pid, signal.SIGINT)
             except ProcessLookupError:
                 pass
-            except PermissionError:
+            except OSError:
                 try:
                     self.server.send_signal(signal.SIGINT)
-                except (ProcessLookupError, PermissionError):
+                except OSError:
                     pass
             try:
                 self.server.wait(timeout=10)
@@ -100,10 +100,10 @@ class Validator:
                     os.killpg(self.server.pid, signal.SIGKILL)
                 except ProcessLookupError:
                     pass
-                except PermissionError:
+                except OSError:
                     try:
                         self.server.kill()
-                    except (ProcessLookupError, PermissionError):
+                    except OSError:
                         pass
                 self.server.wait()
         self.server = None
