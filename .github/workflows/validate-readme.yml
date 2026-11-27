@@ -2,12 +2,20 @@ name: Validate README
 
 on:
   push:
-    branches:
-      - '**'
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   validate-readme:
+    # Forked PRs cannot access the Docker Hub and demo secrets this job needs.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    env:
+      SPECMATIC_ENTERPRISE_IMAGE: ${{ github.event_name == 'pull_request' && 'specmatic/enterprise-snapshots:latest' || 'specmatic/enterprise:latest' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -16,6 +24,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+
+      - name: Authenticate to Docker Hub
+        if: github.event_name == 'pull_request'
+        env:
+          DOCKER_HUB_USERNAME: ${{ vars.SPECMATIC_DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_TOKEN: ${{ secrets.SPECMATIC_DOCKER_HUB_TOKEN }}
+        run: |
+          : "${DOCKER_HUB_USERNAME:?Missing SPECMATIC_DOCKER_HUB_USERNAME repository variable}"
+          : "${DOCKER_HUB_TOKEN:?Missing SPECMATIC_DOCKER_HUB_TOKEN repository secret}"
+          printf '%s' "$DOCKER_HUB_TOKEN" | docker login --username "$DOCKER_HUB_USERNAME" --password-stdin
 
       - name: Set up Specmatic license
         env:
@@ -26,8 +44,10 @@ jobs:
           chmod 600 "$HOME/.specmatic/specmatic-license.txt"
 
       - name: Authenticate GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          echo "${{ secrets.GH_TOKEN }}" | gh auth login --hostname github.com --with-token
+          printf '%s\n' "$GH_TOKEN" | gh auth login --hostname github.com --with-token
           gh auth setup-git
 
       - name: Run validate README script
