@@ -90,6 +90,7 @@ echo "Run one scenario at a time from a second terminal. Press Ctrl-C here when 
 cd "$SESSION"
 SERVER_COMMAND=(
   docker run --rm --name "$CONTAINER_NAME"
+  --user "$(id -u):$(id -g)"
   --publish "127.0.0.1:$SERVER_PORT:$SERVER_PORT"
   --mount "type=bind,source=$SESSION,target=/demo"
   --workdir /demo
