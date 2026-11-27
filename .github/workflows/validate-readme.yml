@@ -26,13 +26,12 @@ jobs:
           chmod 600 "$HOME/.specmatic/specmatic-license.txt"
 
       - name: Authenticate GitHub CLI
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
+          echo "${{ secrets.GH_TOKEN }}" | gh auth login --hostname github.com --with-token
           gh auth setup-git
-          echo "$GH_TOKEN" | gh auth login --hostname github.com --with-token
 
       - name: Run validate README script
         env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           SPECMATIC_CONFIG_REPO_URL: ${{ secrets.SPECMATIC_CONFIG_REPO_URL }}
         run: python3 scripts/validate_readme_commands.py
