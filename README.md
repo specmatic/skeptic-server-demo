@@ -13,7 +13,7 @@ The server runs using `specmatic/enterprise:latest`. Start Docker before running
 Pull the image before starting:
 
 ```shell
-docker pull specmatic/enterprise:latest
+docker pull "${SPECMATIC_ENTERPRISE_IMAGE:-specmatic/enterprise:latest}"
 ```
 
 ```terminaloutput
