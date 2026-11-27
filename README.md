@@ -610,6 +610,18 @@ Large 5MB spec lint response:
 
 Server logs remain visible in the first terminal. They include request IDs and HTTP outcomes for the scenarios.
 
+## JWT authentication scenarios
+
+For focused caller-authentication checks, use the [JWT authentication scenarios](jwt-auth-scenarios/README.md). They cover valid and rejected tokens, claim checks, malformed credentials, and request ID handling. Each numbered script sends one request and prints its response. The automated runner checks the JSON error code and message, request ID correlation, and the Bearer challenge on every HTTP 401. It also sends valid and invalid requests in sequence to check that authentication state does not leak between requests.
+
+With the demo server running, run the full JWT scenario set from a second terminal:
+
+```shell
+python3 jwt-auth-scenarios/run_all.py
+```
+
+These auth-only checks use the local JWKS fixture and do not need a GitHub token or submit reports to Insights. They reuse the server URL and TLS settings selected at startup.
+
 ## Insights failure and recovery
 
 Run this walkthrough separately on a fresh demo server. It requires a service-account licence pointing to a controllable Insights test endpoint. The lint server publishes to the Insights URL in its licence, and `./demo.sh start` starts only the JWT and spec fixtures.
@@ -677,7 +689,7 @@ python3 scripts/validate_readme_commands.py
 
 The summary shows how many commands passed and how many optional or manual steps were skipped. Counts may change when README examples are added or removed.
 
-The validator reads shell blocks from this README and runs the supported commands in a temporary copy of the demo. It checks that the server starts, scenarios exit successfully, and status endpoints return valid JSON. It exits nonzero if a command fails or times out. Successful lint scenarios publish sample reports to the Insights destination in your license, so use a test destination when running it.
+The validator reads shell blocks from this README and runs the supported commands in a temporary copy of the demo. It checks that the server starts, scenarios exit successfully, status endpoints return valid JSON, and the JWT runner sees the expected auth responses, request ID correlation, and challenge headers. It exits nonzero if a command fails or times out. Successful lint scenarios publish sample reports to the Insights destination in your license, so use a test destination when running it. JWT-only scenarios stop before config loading and report submission.
 
 Validation uses a temporary copy of the demo and separate available ports. It starts and stops its own HTTP server, leaving an existing demo server and its `.demo-state/` directory alone. Docker must be running, GitHub CLI must already be signed in with access to the configured repository, and a valid licence must be available.
 

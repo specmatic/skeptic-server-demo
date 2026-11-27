@@ -52,7 +52,7 @@ def free_ports(count: int) -> list[int]:
 
 
 def prepare_workspace(destination: Path, ports: list[int]) -> None:
-    for name in ("demo.sh", "demo.py", "fixture_server.py", "scenarios", "requests", "specs"):
+    for name in ("demo.sh", "demo.py", "fixture_server.py", "scenarios", "jwt-auth-scenarios", "requests", "specs"):
         source = ROOT / name
         if source.is_dir():
             shutil.copytree(source, destination / name)
