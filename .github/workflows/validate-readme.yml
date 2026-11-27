@@ -43,13 +43,6 @@ jobs:
           printf '%s\n' "$SPECMATIC_LICENSE_KEY" > "$HOME/.specmatic/specmatic-license.txt"
           chmod 600 "$HOME/.specmatic/specmatic-license.txt"
 
-      - name: Authenticate GitHub CLI
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          printf '%s\n' "$GH_TOKEN" | gh auth login --hostname github.com --with-token
-          gh auth setup-git
-
       - name: Run validate README script
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
